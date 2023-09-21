@@ -1,0 +1,1662 @@
+#version 460
+
+layout(set = 0, binding = 1, std140) uniform cbTextureTilingScaleUBO
+{
+    vec4 _m0[25];
+} cbTextureTilingScale;
+
+layout(set = 0, binding = 3, std140) uniform cbMtdParamUBO
+{
+    vec4 _m0[16];
+} cbMtdParam;
+
+layout(set = 0, binding = 8, std140) uniform cbSceneParamUBO
+{
+    vec4 _m0[128];
+} cbSceneParam;
+
+layout(set = 0, binding = 9, std140) uniform cbPerFrameUBO
+{
+    vec4 _m0[23];
+} cbPerFrame;
+
+layout(set = 0, binding = 4, std140) uniform cbInstanceDataUBO
+{
+    vec4 _m0[26];
+} cbInstanceData;
+
+layout(set = 0, binding = 2, std140) uniform cbMatDynParamUBO
+{
+    vec4 _m0[17];
+} cbMatDynParam;
+
+layout(set = 0, binding = 5, std140) uniform cbLightUBO
+{
+    vec4 _m0[28];
+} cbLight;
+
+layout(set = 0, binding = 7, std140) uniform cbModelParamUBO
+{
+    vec4 _m0[41];
+} cbModelParam;
+
+layout(set = 0, binding = 30) uniform textureCube g_IBLTexture;
+layout(set = 0, binding = 31) uniform textureCube g_IBLTexture2;
+layout(set = 0, binding = 40) uniform texture2D g_DecalDiffuseTexture;
+layout(set = 0, binding = 41) uniform texture2D g_DecalSpecularTexture;
+layout(set = 0, binding = 38) uniform texture2D g_DitherTexture;
+layout(set = 0, binding = 33) uniform texture2D g_SSAOTexture;
+layout(set = 0, binding = 47) uniform texture3D g_VolumeFog0;
+layout(set = 0, binding = 26) uniform texture3D g_IrradianceVolumeX;
+layout(set = 0, binding = 27) uniform texture3D g_IrradianceVolumeY;
+layout(set = 0, binding = 28) uniform texture3D g_IrradianceVolumeZ;
+layout(set = 0, binding = 29) uniform texture3D g_IrradianceVolumeW;
+layout(set = 0, binding = 34) uniform texture3D g_IrradianceVolume2X;
+layout(set = 0, binding = 35) uniform texture3D g_IrradianceVolume2Y;
+layout(set = 0, binding = 36) uniform texture3D g_IrradianceVolume2Z;
+layout(set = 0, binding = 37) uniform texture3D g_IrradianceVolume2W;
+layout(set = 0, binding = 61) uniform usamplerBuffer g_PointLightRenderingBuffer;
+layout(set = 0, binding = 62) uniform usamplerBuffer g_SpotLightRenderingBuffer;
+layout(set = 0, binding = 59) uniform usamplerBuffer g_lightClassification;
+layout(set = 0, binding = 60) uniform usamplerBuffer g_lightClusterGridBuffer;
+layout(set = 0, binding = 0) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_1;
+layout(set = 0, binding = 1) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_7;
+layout(set = 0, binding = 2) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_0;
+layout(set = 0, binding = 5) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_2;
+layout(set = 0, binding = 6) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_3;
+layout(set = 0, binding = 8) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_5;
+layout(set = 0, binding = 9) uniform texture2D C_DetailBlend_SSS_snp_0_Texture2D_6;
+layout(set = 0, binding = 0) uniform sampler SS_DiffuseMap;
+layout(set = 0, binding = 1) uniform sampler SS_SpecularMap;
+layout(set = 0, binding = 2) uniform sampler SS_BumpMap;
+layout(set = 0, binding = 6) uniform sampler SS_WrapPoint;
+layout(set = 0, binding = 8) uniform sampler SS_WrapLinear;
+layout(set = 0, binding = 9) uniform sampler SS_ClampLinear;
+
+layout(location = 1) in vec4 POSITION_1;
+layout(location = 2) in vec4 NORMAL;
+layout(location = 3) in vec4 TANGENT;
+layout(location = 4) in vec4 TEXCOORD;
+layout(location = 5) in float TEXCOORD_4;
+layout(location = 0) out vec4 SV_Target;
+layout(location = 1) out vec4 SV_Target_1;
+bool discard_state;
+
+float _1278;
+float _3696;
+float _3697;
+float _3698;
+float _3699;
+
+void discard_exit()
+{
+    if (discard_state)
+    {
+        discard;
+    }
+}
+
+void main()
+{
+    discard_state = false;
+    SV_Target.x = 0.0;
+    SV_Target.y = 0.0;
+    SV_Target.z = 0.0;
+    SV_Target.w = 0.0;
+    SV_Target_1.x = 0.0;
+    SV_Target_1.y = 0.0;
+    SV_Target_1.z = 0.0;
+    SV_Target_1.w = 0.0;
+    float _200 = ((NORMAL.y * TANGENT.z) - (NORMAL.z * TANGENT.y)) * TANGENT.w;
+    float _201 = ((NORMAL.z * TANGENT.x) - (NORMAL.x * TANGENT.z)) * TANGENT.w;
+    float _202 = ((NORMAL.x * TANGENT.y) - (NORMAL.y * TANGENT.x)) * TANGENT.w;
+    float _208 = inversesqrt(dot(vec3(_200, _201, _202), vec3(_200, _201, _202)));
+    float _215 = inversesqrt(dot(vec3(NORMAL.x, NORMAL.y, NORMAL.z), vec3(NORMAL.x, NORMAL.y, NORMAL.z)));
+    float _216 = _215 * NORMAL.x;
+    float _217 = _215 * NORMAL.y;
+    float _218 = _215 * NORMAL.z;
+    float _222 = inversesqrt(dot(vec3(TANGENT.x, TANGENT.y, TANGENT.z), vec3(TANGENT.x, TANGENT.y, TANGENT.z)));
+    float _230;
+    float _231;
+    float _232;
+    if ((gl_FrontFacing ? 4294967295u : 0u) == 0u)
+    {
+        _230 = (-0.0) - _216;
+        _231 = (-0.0) - _217;
+        _232 = (-0.0) - _218;
+    }
+    else
+    {
+        _230 = _216;
+        _231 = _217;
+        _232 = _218;
+    }
+    float _277 = fma(POSITION_1.w, cbSceneParam._m0[11u].w, fma(POSITION_1.z, cbSceneParam._m0[11u].z, fma(POSITION_1.y, cbSceneParam._m0[11u].y, cbSceneParam._m0[11u].x * POSITION_1.x)));
+    float _287 = cbSceneParam._m0[71u].x - (fma(POSITION_1.w, cbSceneParam._m0[8u].w, fma(POSITION_1.z, cbSceneParam._m0[8u].z, fma(POSITION_1.y, cbSceneParam._m0[8u].y, cbSceneParam._m0[8u].x * POSITION_1.x))) / _277);
+    float _288 = cbSceneParam._m0[71u].y - (fma(POSITION_1.w, cbSceneParam._m0[9u].w, fma(POSITION_1.z, cbSceneParam._m0[9u].z, fma(POSITION_1.y, cbSceneParam._m0[9u].y, cbSceneParam._m0[9u].x * POSITION_1.x))) / _277);
+    float _289 = cbSceneParam._m0[71u].z - (fma(POSITION_1.w, cbSceneParam._m0[10u].w, fma(POSITION_1.z, cbSceneParam._m0[10u].z, fma(POSITION_1.y, cbSceneParam._m0[10u].y, cbSceneParam._m0[10u].x * POSITION_1.x))) / _277);
+    vec4 _302 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_0, SS_BumpMap), vec2((cbTextureTilingScale._m0[2u].x * TEXCOORD.x) + cbTextureTilingScale._m0[2u].z, (cbTextureTilingScale._m0[2u].y * TEXCOORD.y) + cbTextureTilingScale._m0[2u].w));
+    float _307 = _302.z;
+    float _313 = exp2(log2(_307 * 22.0) * 260.0);
+    float _314 = isnan(0.0) ? _313 : (isnan(_313) ? 0.0 : max(_313, 0.0));
+    float _315 = isnan(1.0) ? _314 : (isnan(_314) ? 1.0 : min(_314, 1.0));
+    vec4 _329 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_2, SS_DiffuseMap), vec2((cbTextureTilingScale._m0[5u].x * TEXCOORD.x) + cbTextureTilingScale._m0[5u].z, (cbTextureTilingScale._m0[5u].y * TEXCOORD.y) + cbTextureTilingScale._m0[5u].w));
+    float _339 = cbMtdParam._m0[10u].x * _329.x;
+    float _340 = cbMtdParam._m0[10u].y * _329.y;
+    float _341 = cbMtdParam._m0[10u].z * _329.z;
+    vec4 _353 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_1, SS_DiffuseMap), vec2((cbTextureTilingScale._m0[0u].x * TEXCOORD.x) + cbTextureTilingScale._m0[0u].z, (cbTextureTilingScale._m0[0u].y * TEXCOORD.y) + cbTextureTilingScale._m0[0u].w));
+    vec4 _375 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_7, SS_DiffuseMap), vec2((cbTextureTilingScale._m0[1u].x * TEXCOORD.x) + cbTextureTilingScale._m0[1u].z, (cbTextureTilingScale._m0[1u].y * TEXCOORD.y) + cbTextureTilingScale._m0[1u].w));
+    float _397 = (((((_353.x * 4.55000019073486328125) * cbMtdParam._m0[9u].x) * _375.x) - _339) * _315) + _339;
+    float _398 = (((((_353.y * 4.55000019073486328125) * cbMtdParam._m0[9u].y) * _375.y) - _340) * _315) + _340;
+    float _399 = (((((_353.z * 4.55000019073486328125) * cbMtdParam._m0[9u].z) * _375.z) - _341) * _315) + _341;
+    float _400 = _375.w * _353.w;
+    vec4 _417 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_3, SS_WrapLinear), vec2((cbTextureTilingScale._m0[6u].x * TEXCOORD.x) + cbTextureTilingScale._m0[6u].z, (cbTextureTilingScale._m0[6u].y * TEXCOORD.y) + cbTextureTilingScale._m0[6u].w));
+    float _427 = (((_417.x - cbMtdParam._m0[15u].y) + cbMtdParam._m0[14u].z) * _315) + cbMtdParam._m0[15u].y;
+    vec4 _439 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_5, SS_BumpMap), vec2((cbTextureTilingScale._m0[8u].x * TEXCOORD.x) + cbTextureTilingScale._m0[8u].z, (cbTextureTilingScale._m0[8u].y * TEXCOORD.y) + cbTextureTilingScale._m0[8u].w));
+    float _441 = _439.x;
+    float _442 = _439.y;
+    float _448 = cbMtdParam._m0[13u].y + _439.z;
+    vec4 _460 = texture(sampler2D(C_DetailBlend_SSS_snp_0_Texture2D_6, SS_BumpMap), vec2((cbTextureTilingScale._m0[9u].x * TEXCOORD.x) + cbTextureTilingScale._m0[9u].z, (cbTextureTilingScale._m0[9u].y * TEXCOORD.y) + cbTextureTilingScale._m0[9u].w));
+    float _472 = ((((_307 * 2.0) * (cbMtdParam._m0[13u].x + _460.z)) - _448) * _315) + _448;
+    float _476 = (_302.x * 2.0) + (-1.0);
+    float _478 = (_302.y * 2.0) + (-1.0);
+    float _479 = dot(vec2(_476, _478), vec2(_476, _478));
+    float _3718 = isnan(0.0) ? _479 : (isnan(_479) ? 0.0 : max(_479, 0.0));
+    float _484 = sqrt(1.0 - (isnan(1.0) ? _3718 : (isnan(_3718) ? 1.0 : min(_3718, 1.0))));
+    float _497 = ((((((_460.x - _441) * _315) + _441) * 2.0) + (-1.0)) * cbMtdParam._m0[13u].z) + _476;
+    float _498 = ((((((_460.y - _442) * _315) + _442) * 2.0) + (-1.0)) * cbMtdParam._m0[13u].z) + _478;
+    float _501 = fma(_484, _230, fma(_498, _222 * TANGENT.x, (_208 * _200) * _497));
+    float _504 = fma(_484, _231, fma(_498, _222 * TANGENT.y, (_208 * _201) * _497));
+    float _507 = fma(_484, _232, fma(_498, _222 * TANGENT.z, (_208 * _202) * _497));
+    float _511 = inversesqrt(dot(vec3(_501, _504, _507), vec3(_501, _504, _507)));
+    float _512 = _511 * _501;
+    float _513 = _511 * _504;
+    float _514 = _511 * _507;
+    float _3729 = isnan(0.0) ? _400 : (isnan(_400) ? 0.0 : max(_400, 0.0));
+    float _515 = isnan(1.0) ? _3729 : (isnan(_3729) ? 1.0 : min(_3729, 1.0));
+    float _3740 = isnan(0.0) ? _472 : (isnan(_472) ? 0.0 : max(_472, 0.0));
+    float _516 = isnan(1.0) ? _3740 : (isnan(_3740) ? 1.0 : min(_3740, 1.0));
+    float _3751 = isnan(0.0) ? _397 : (isnan(_397) ? 0.0 : max(_397, 0.0));
+    float _517 = isnan(1.0) ? _3751 : (isnan(_3751) ? 1.0 : min(_3751, 1.0));
+    float _3762 = isnan(0.0) ? _398 : (isnan(_398) ? 0.0 : max(_398, 0.0));
+    float _518 = isnan(1.0) ? _3762 : (isnan(_3762) ? 1.0 : min(_3762, 1.0));
+    float _3773 = isnan(0.0) ? _399 : (isnan(_399) ? 0.0 : max(_399, 0.0));
+    float _519 = isnan(1.0) ? _3773 : (isnan(_3773) ? 1.0 : min(_3773, 1.0));
+    float _3784 = isnan(0.0) ? _427 : (isnan(_427) ? 0.0 : max(_427, 0.0));
+    float _520 = isnan(1.0) ? _3784 : (isnan(_3784) ? 1.0 : min(_3784, 1.0));
+    float _528 = cbMatDynParam._m0[9u].x * _517;
+    float _529 = cbMatDynParam._m0[9u].y * _518;
+    float _530 = cbMatDynParam._m0[9u].z * _519;
+    float _538 = inversesqrt(dot(vec3(_287, _288, _289), vec3(_287, _288, _289)));
+    float _539 = _538 * _287;
+    float _540 = _538 * _288;
+    float _541 = _538 * _289;
+    float _542 = dot(vec3(_512, _513, _514), vec3(_539, _540, _541));
+    float _548 = abs(exp2(log2(_542) * cbMatDynParam._m0[12u].x));
+    float _549 = isnan(0.100000001490116119384765625) ? _548 : (isnan(_548) ? 0.100000001490116119384765625 : max(_548, 0.100000001490116119384765625));
+    float _555 = ((isnan(0.699999988079071044921875) ? _549 : (isnan(_549) ? 0.699999988079071044921875 : min(_549, 0.699999988079071044921875))) + (-0.100000001490116119384765625)) * 1.66666662693023681640625;
+    float _578 = 1.0 - cbMatDynParam._m0[8u].w;
+    float _3805 = isnan(0.0) ? _578 : (isnan(_578) ? 0.0 : max(_578, 0.0));
+    float _581 = 1.0 - cbMatDynParam._m0[7u].w;
+    float _3816 = isnan(0.0) ? _581 : (isnan(_581) ? 0.0 : max(_581, 0.0));
+    float _582 = isnan(1.0) ? _3816 : (isnan(_3816) ? 1.0 : min(_3816, 1.0));
+    float _586 = dot(vec3(_512, _513, _514), vec3(0.0, -1.0, 0.0));
+    float _3827 = isnan(0.0) ? _586 : (isnan(_586) ? 0.0 : max(_586, 0.0));
+    float _589 = isnan(1.0) ? _3827 : (isnan(_3827) ? 1.0 : min(_3827, 1.0));
+    float _596 = (_589 * _517) * cbMatDynParam._m0[11u].x;
+    float _598 = (_589 * _518) * cbMatDynParam._m0[11u].y;
+    float _600 = (_589 * _519) * cbMatDynParam._m0[11u].z;
+    float _607 = dot(vec3(_539, _540, _541), vec3(_512, _513, _514));
+    float _610 = _607 * 2.0;
+    float _620 = dot(vec3((-0.0) - (_539 - (_610 * _512)), (-0.0) - (_540 - (_610 * _513)), (-0.0) - (_541 - (_610 * _514))), vec3(0.0, -1.0, 0.0));
+    float _3838 = isnan(0.0) ? _620 : (isnan(_620) ? 0.0 : max(_620, 0.0));
+    float _627 = exp2(log2(isnan(1.0) ? _3838 : (isnan(_3838) ? 1.0 : min(_3838, 1.0))) * 4.0);
+    float _653 = (floatBitsToUint(cbSceneParam._m0[88u]).x != 0u) ? POSITION_1.w : (cbSceneParam._m0[0u].x - (cbSceneParam._m0[0u].z * POSITION_1.z));
+    vec4 _658 = texture(sampler2D(g_DitherTexture, SS_WrapPoint), vec2(gl_FragCoord.x * 0.125, gl_FragCoord.y * 0.125));
+    float _660 = _658.w;
+    if (!(floatBitsToUint(cbMatDynParam._m0[6u]).x == 0u))
+    {
+        float _957 = sqrt(((_287 * _287) + (_288 * _288)) + (_289 * _289));
+        float _963 = (cbMatDynParam._m0[5u].x * _957) + cbMatDynParam._m0[5u].y;
+        float _3849 = isnan(0.0) ? _963 : (isnan(_963) ? 0.0 : max(_963, 0.0));
+        float _964 = isnan(1.0) ? _3849 : (isnan(_3849) ? 1.0 : min(_3849, 1.0));
+        float _968 = (cbMatDynParam._m0[5u].z * _957) + cbMatDynParam._m0[5u].w;
+        float _3860 = isnan(0.0) ? _968 : (isnan(_968) ? 0.0 : max(_968, 0.0));
+        if (((cbMatDynParam._m0[6u].y * ((isnan(1.0) ? _3860 : (isnan(_3860) ? 1.0 : min(_3860, 1.0))) - _964)) + _964) < ((_660 * 0.9900000095367431640625) + 0.00999999977648258209228515625))
+        {
+            discard_state = true;
+        }
+    }
+    float _671 = cbSceneParam._m0[85u].z * gl_FragCoord.x;
+    float _672 = cbSceneParam._m0[85u].w * gl_FragCoord.y;
+    vec4 _674 = texture(sampler2D(g_DecalDiffuseTexture, SS_DiffuseMap), vec2(TEXCOORD.z, TEXCOORD.w));
+    float _676 = _674.w;
+    float _694 = fma(_514, cbSceneParam._m0[5u].z, fma(_513, cbSceneParam._m0[5u].y, cbSceneParam._m0[5u].x * _512));
+    float _697 = fma(_514, cbSceneParam._m0[6u].z, fma(_513, cbSceneParam._m0[6u].y, cbSceneParam._m0[6u].x * _512));
+    float _700 = fma(_514, cbSceneParam._m0[7u].z, fma(_513, cbSceneParam._m0[7u].y, cbSceneParam._m0[7u].x * _512));
+    vec4 _702 = texture(sampler2D(g_DecalSpecularTexture, SS_SpecularMap), vec2(TEXCOORD.z, TEXCOORD.w));
+    float _704 = _702.x;
+    float _716 = (((_702.y - _516) + (_702.w * _516)) * cbMtdParam._m0[3u].x) + _516;
+    vec4 _717 = texture(sampler2D(g_DecalSpecularTexture, SS_SpecularMap), vec2(TEXCOORD.z, TEXCOORD.w));
+    float _733 = (((cbMatDynParam._m0[14u].y - cbMatDynParam._m0[14u].x) * dot(vec3(cbMtdParam._m0[3u].x * (_704 * _704)), vec3(0.2989099919795989990234375, 0.586610019207000732421875, 0.11448000371456146240234375))) + cbMatDynParam._m0[14u].x) * _717.z;
+    float _741 = (((cbMatDynParam._m0[15u].x - _520) * cbMatDynParam._m0[15u].w) * _733) + _520;
+    float _749 = ((_733 * cbMatDynParam._m0[16u].z) * (cbMatDynParam._m0[16u].x - _716)) + _716;
+    uint _773 = uint(roundEven(NORMAL.w)) * 13u;
+    uint _774 = _773 + 9u;
+    uint _775 = _774 + uint(cbMatDynParam._m0[0u].w);
+    float _781 = (cbMtdParam._m0[0u].x * _528) * cbInstanceData._m0[_775].x;
+    float _782 = (cbMtdParam._m0[0u].y * _529) * cbInstanceData._m0[_775].y;
+    float _783 = (cbMtdParam._m0[0u].z * _530) * cbInstanceData._m0[_775].z;
+    float _3871 = isnan(0.0) ? _781 : (isnan(_781) ? 0.0 : max(_781, 0.0));
+    float _784 = isnan(1.0) ? _3871 : (isnan(_3871) ? 1.0 : min(_3871, 1.0));
+    float _3882 = isnan(0.0) ? _782 : (isnan(_782) ? 0.0 : max(_782, 0.0));
+    float _785 = isnan(1.0) ? _3882 : (isnan(_3882) ? 1.0 : min(_3882, 1.0));
+    float _3893 = isnan(0.0) ? _783 : (isnan(_783) ? 0.0 : max(_783, 0.0));
+    float _786 = isnan(1.0) ? _3893 : (isnan(_3893) ? 1.0 : min(_3893, 1.0));
+    vec4 _787 = texture(sampler2D(g_DecalDiffuseTexture, SS_DiffuseMap), vec2(TEXCOORD.z, TEXCOORD.w));
+    vec4 _792 = texture(sampler2D(g_DecalSpecularTexture, SS_SpecularMap), vec2(TEXCOORD.z, TEXCOORD.w));
+    float _803 = (((_792.x - _741) + (_792.w * _741)) * cbMtdParam._m0[3u].x) + _741;
+    float _816 = (cbMtdParam._m0[3u].x * (((_784 * _676) - _784) + _787.x)) + _784;
+    float _817 = (cbMtdParam._m0[3u].x * (((_785 * _676) - _785) + _787.y)) + _785;
+    float _818 = (cbMtdParam._m0[3u].x * (((_786 * _676) - _786) + _787.z)) + _786;
+    vec4 _819 = texture(sampler2D(g_DecalSpecularTexture, SS_SpecularMap), vec2(TEXCOORD.z, TEXCOORD.w));
+    float _832 = (((cbMatDynParam._m0[14u].y - cbMatDynParam._m0[14u].x) * dot(vec3((_741 * (_528 + (-0.039999999105930328369140625))) + 0.039999999105930328369140625, (_741 * (_529 + (-0.039999999105930328369140625))) + 0.039999999105930328369140625, (_741 * (_530 + (-0.039999999105930328369140625))) + 0.039999999105930328369140625), vec3(0.2989099919795989990234375, 0.586610019207000732421875, 0.11448000371456146240234375))) + cbMatDynParam._m0[14u].x) * _819.z;
+    float _836 = _832 * cbMatDynParam._m0[13u].w;
+    float _846 = (_836 * (cbMatDynParam._m0[13u].x - _816)) + _816;
+    float _847 = (_836 * (cbMatDynParam._m0[13u].y - _817)) + _817;
+    float _848 = (_836 * (cbMatDynParam._m0[13u].z - _818)) + _818;
+    float _856 = ((_832 * cbMatDynParam._m0[15u].w) * (cbMatDynParam._m0[15u].x - _803)) + _803;
+    float _857 = 1.0 - _856;
+    float _858 = _857 * _846;
+    float _859 = _857 * _847;
+    float _860 = _857 * _848;
+    float _864 = (_846 + (-0.039999999105930328369140625)) * _856;
+    float _865 = (_847 + (-0.039999999105930328369140625)) * _856;
+    float _866 = (_848 + (-0.039999999105930328369140625)) * _856;
+    float _867 = _864 + 0.039999999105930328369140625;
+    float _868 = _865 + 0.039999999105930328369140625;
+    float _869 = _866 + 0.039999999105930328369140625;
+    vec4 _878 = texture(sampler2D(g_SSAOTexture, SS_WrapLinear), vec2(cbSceneParam._m0[86u].x * _671, cbSceneParam._m0[86u].y * _672));
+    float _881 = _878.x * TEXCOORD_4;
+    float _882 = _542 * 2.0;
+    float _886 = (_882 * _512) - _539;
+    float _887 = (_882 * _513) - _540;
+    float _888 = (_882 * _514) - _541;
+    float _889 = abs(_607);
+    float _3904 = isnan(0.0) ? _889 : (isnan(_889) ? 0.0 : max(_889, 0.0));
+    float _891 = sqrt(_749);
+    float _903 = exp2((_891 * 5.0) * log2(1.0 - ((isnan(1.0) ? _3904 : (isnan(_3904) ? 1.0 : min(_3904, 1.0))) * 0.999000012874603271484375))) / (4.0 - (_891 * 3.0));
+    float _909 = (1.0 - _903) * ((_891 * 0.60000002384185791015625) + 0.4000000059604644775390625);
+    float _910 = _903 * _891;
+    float _938 = fma(POSITION_1.w, cbSceneParam._m0[8u].w, fma(POSITION_1.z, cbSceneParam._m0[8u].z, fma(POSITION_1.y, cbSceneParam._m0[8u].y, cbSceneParam._m0[8u].x * POSITION_1.x)));
+    float _942 = fma(POSITION_1.w, cbSceneParam._m0[9u].w, fma(POSITION_1.z, cbSceneParam._m0[9u].z, fma(POSITION_1.y, cbSceneParam._m0[9u].y, cbSceneParam._m0[9u].x * POSITION_1.x)));
+    float _946 = fma(POSITION_1.w, cbSceneParam._m0[10u].w, fma(POSITION_1.z, cbSceneParam._m0[10u].z, fma(POSITION_1.y, cbSceneParam._m0[10u].y, cbSceneParam._m0[10u].x * POSITION_1.x)));
+    float _1277;
+    float _1279;
+    float _1280;
+    float _1281;
+    float _1282;
+    float _1283;
+    float _1284;
+    float _1285;
+    float _1286;
+    float _1287;
+    float _1288;
+    float _1289;
+    float _1290;
+    float _1291;
+    float _1292;
+    if (cbModelParam._m0[36u].x > 0.0)
+    {
+        float _1002 = fma(_946, cbModelParam._m0[26u].z, fma(_942, cbModelParam._m0[26u].y, cbModelParam._m0[26u].x * _938));
+        float _1006 = fma(_946, cbModelParam._m0[27u].z, fma(_942, cbModelParam._m0[27u].y, cbModelParam._m0[27u].x * _938));
+        float _1010 = fma(_946, cbModelParam._m0[28u].z, fma(_942, cbModelParam._m0[28u].y, cbModelParam._m0[28u].x * _938));
+        float _1035 = _938 + _512;
+        float _1036 = _942 + _513;
+        float _1037 = _946 + _514;
+        float _1047 = fma(_1037, cbModelParam._m0[26u].z, fma(_1036, cbModelParam._m0[26u].y, cbModelParam._m0[26u].x * _1035)) - _1002;
+        float _1048 = fma(_1037, cbModelParam._m0[27u].z, fma(_1036, cbModelParam._m0[27u].y, cbModelParam._m0[27u].x * _1035)) - _1006;
+        float _1049 = fma(_1037, cbModelParam._m0[28u].z, fma(_1036, cbModelParam._m0[28u].y, cbModelParam._m0[28u].x * _1035)) - _1010;
+        float _1053 = inversesqrt(dot(vec3(_1047, _1048, _1049), vec3(_1047, _1048, _1049)));
+        float _1066 = ((_1053 * _1047) / cbModelParam._m0[34u].x) + ((cbModelParam._m0[37u].x * ((((_1002 + cbModelParam._m0[26u].w) + 1.0) * 0.5) + (-0.5))) + 0.5);
+        float _1067 = ((_1053 * _1048) / cbModelParam._m0[34u].y) + ((cbModelParam._m0[37u].y * ((((_1006 + cbModelParam._m0[27u].w) + 1.0) * 0.5) + (-0.5))) + 0.5);
+        float _1068 = ((_1053 * _1049) / cbModelParam._m0[34u].z) + ((((((_1010 + cbModelParam._m0[28u].w) + 1.0) * 0.5) + (-0.5)) * cbModelParam._m0[37u].z) + 0.5);
+        vec4 _1071 = textureLod(sampler3D(g_IrradianceVolumeX, SS_ClampLinear), vec3(_1066, _1067, _1068), 0.0);
+        vec4 _1078 = textureLod(sampler3D(g_IrradianceVolumeY, SS_ClampLinear), vec3(_1066, _1067, _1068), 0.0);
+        vec4 _1085 = textureLod(sampler3D(g_IrradianceVolumeZ, SS_ClampLinear), vec3(_1066, _1067, _1068), 0.0);
+        vec4 _1092 = textureLod(sampler3D(g_IrradianceVolumeW, SS_ClampLinear), vec3(_1066, _1067, _1068), 0.0);
+        float _1105 = exp2((_1071.w + (-0.5)) * 20.0) * 2.0;
+        float _1106 = _1105 * (_1071.x + (-0.5));
+        float _1107 = _1105 * (_1071.y + (-0.5));
+        float _1108 = _1105 * (_1071.z + (-0.5));
+        float _1115 = exp2((_1078.w + (-0.5)) * 20.0) * 2.0;
+        float _1116 = _1115 * (_1078.x + (-0.5));
+        float _1117 = _1115 * (_1078.y + (-0.5));
+        float _1118 = _1115 * (_1078.z + (-0.5));
+        float _1125 = exp2((_1085.w + (-0.5)) * 20.0) * 2.0;
+        float _1126 = _1125 * (_1085.x + (-0.5));
+        float _1127 = _1125 * (_1085.y + (-0.5));
+        float _1128 = _1125 * (_1085.z + (-0.5));
+        float _1135 = exp2((_1092.w + (-0.5)) * 20.0) * 2.0;
+        float _1136 = _1135 * (_1092.x + (-0.5));
+        float _1137 = _1135 * (_1092.y + (-0.5));
+        float _1138 = _1135 * (_1092.z + (-0.5));
+        float _1139 = isnan(0.0) ? _1136 : (isnan(_1136) ? 0.0 : max(_1136, 0.0));
+        float _1140 = isnan(0.0) ? _1137 : (isnan(_1137) ? 0.0 : max(_1137, 0.0));
+        float _1141 = isnan(0.0) ? _1138 : (isnan(_1138) ? 0.0 : max(_1138, 0.0));
+        float _1142 = _1106 * 0.5;
+        float _1143 = _1116 * 0.5;
+        float _1144 = _1126 * 0.5;
+        float _1145 = dot(vec3(_1142, _1143, _1144), vec3(_1142, _1143, _1144));
+        float _1150 = (_1145 == 0.0) ? 3.4028234663852885981170418348452e+38 : inversesqrt(_1145);
+        float _1159 = (dot(vec3(_512, _513, _514), vec3(_1150 * _1142, _1150 * _1143, _1150 * _1144)) + 1.0) * 0.5;
+        float _3930 = isnan(0.0) ? _1159 : (isnan(_1159) ? 0.0 : max(_1159, 0.0));
+        float _1169 = sqrt(((_1143 * _1143) + (_1142 * _1142)) + (_1144 * _1144)) / (_1139 + 9.9999997473787516355514526367188e-06);
+        float _3941 = isnan(0.0) ? _1169 : (isnan(_1169) ? 0.0 : max(_1169, 0.0));
+        float _1170 = isnan(1.0) ? _3941 : (isnan(_3941) ? 1.0 : min(_3941, 1.0));
+        float _1171 = _1170 * 2.0;
+        float _1175 = (1.0 - _1170) / (_1170 + 1.0);
+        float _3952 = isnan(0.0) ? _1175 : (isnan(_1175) ? 0.0 : max(_1175, 0.0));
+        float _1176 = isnan(1.0) ? _3952 : (isnan(_3952) ? 1.0 : min(_3952, 1.0));
+        float _1185 = ((((1.0 - _1176) * (_1171 + 2.0)) * exp2(log2(isnan(1.0) ? _3930 : (isnan(_3930) ? 1.0 : min(_3930, 1.0))) * (_1171 + 1.0))) + _1176) * _1139;
+        float _1186 = _1107 * 0.5;
+        float _1187 = _1117 * 0.5;
+        float _1188 = _1127 * 0.5;
+        float _1189 = dot(vec3(_1186, _1187, _1188), vec3(_1186, _1187, _1188));
+        float _1194 = (_1189 == 0.0) ? 3.4028234663852885981170418348452e+38 : inversesqrt(_1189);
+        float _1202 = (dot(vec3(_512, _513, _514), vec3(_1194 * _1186, _1194 * _1187, _1194 * _1188)) + 1.0) * 0.5;
+        float _3963 = isnan(0.0) ? _1202 : (isnan(_1202) ? 0.0 : max(_1202, 0.0));
+        float _1211 = sqrt(((_1187 * _1187) + (_1186 * _1186)) + (_1188 * _1188)) / (_1140 + 9.9999997473787516355514526367188e-06);
+        float _3974 = isnan(0.0) ? _1211 : (isnan(_1211) ? 0.0 : max(_1211, 0.0));
+        float _1212 = isnan(1.0) ? _3974 : (isnan(_3974) ? 1.0 : min(_3974, 1.0));
+        float _1213 = _1212 * 2.0;
+        float _1217 = (1.0 - _1212) / (_1212 + 1.0);
+        float _3985 = isnan(0.0) ? _1217 : (isnan(_1217) ? 0.0 : max(_1217, 0.0));
+        float _1218 = isnan(1.0) ? _3985 : (isnan(_3985) ? 1.0 : min(_3985, 1.0));
+        float _1227 = ((((1.0 - _1218) * (_1213 + 2.0)) * exp2(log2(isnan(1.0) ? _3963 : (isnan(_3963) ? 1.0 : min(_3963, 1.0))) * (_1213 + 1.0))) + _1218) * _1140;
+        float _1228 = _1108 * 0.5;
+        float _1229 = _1118 * 0.5;
+        float _1230 = _1128 * 0.5;
+        float _1231 = dot(vec3(_1228, _1229, _1230), vec3(_1228, _1229, _1230));
+        float _1236 = (_1231 == 0.0) ? 3.4028234663852885981170418348452e+38 : inversesqrt(_1231);
+        float _1244 = (dot(vec3(_512, _513, _514), vec3(_1236 * _1228, _1236 * _1229, _1236 * _1230)) + 1.0) * 0.5;
+        float _3996 = isnan(0.0) ? _1244 : (isnan(_1244) ? 0.0 : max(_1244, 0.0));
+        float _1253 = sqrt(((_1229 * _1229) + (_1228 * _1228)) + (_1230 * _1230)) / (_1141 + 9.9999997473787516355514526367188e-06);
+        float _4007 = isnan(0.0) ? _1253 : (isnan(_1253) ? 0.0 : max(_1253, 0.0));
+        float _1254 = isnan(1.0) ? _4007 : (isnan(_4007) ? 1.0 : min(_4007, 1.0));
+        float _1255 = _1254 * 2.0;
+        float _1259 = (1.0 - _1254) / (_1254 + 1.0);
+        float _4018 = isnan(0.0) ? _1259 : (isnan(_1259) ? 0.0 : max(_1259, 0.0));
+        float _1260 = isnan(1.0) ? _4018 : (isnan(_4018) ? 1.0 : min(_4018, 1.0));
+        float _1269 = ((((1.0 - _1260) * (_1255 + 2.0)) * exp2(log2(isnan(1.0) ? _3996 : (isnan(_3996) ? 1.0 : min(_3996, 1.0))) * (_1255 + 1.0))) + _1260) * _1141;
+        _1277 = _1108;
+        _1279 = _1107;
+        _1280 = _1106;
+        _1281 = _1118;
+        _1282 = _1117;
+        _1283 = _1116;
+        _1284 = _1128;
+        _1285 = _1127;
+        _1286 = _1126;
+        _1287 = _1141;
+        _1288 = _1140;
+        _1289 = _1139;
+        _1290 = cbModelParam._m0[36u].z * (isnan(0.0) ? _1185 : (isnan(_1185) ? 0.0 : max(_1185, 0.0)));
+        _1291 = cbModelParam._m0[36u].z * (isnan(0.0) ? _1227 : (isnan(_1227) ? 0.0 : max(_1227, 0.0)));
+        _1292 = cbModelParam._m0[36u].z * (isnan(0.0) ? _1269 : (isnan(_1269) ? 0.0 : max(_1269, 0.0)));
+    }
+    else
+    {
+        _1277 = _1278;
+        _1279 = _1278;
+        _1280 = _1278;
+        _1281 = _1278;
+        _1282 = _1278;
+        _1283 = _1278;
+        _1284 = _1278;
+        _1285 = _1278;
+        _1286 = _1278;
+        _1287 = _1278;
+        _1288 = _1278;
+        _1289 = _1278;
+        _1290 = 0.0;
+        _1291 = 0.0;
+        _1292 = 0.0;
+    }
+    float _1590;
+    float _1591;
+    float _1592;
+    float _1593;
+    float _1594;
+    float _1595;
+    float _1596;
+    float _1597;
+    float _1598;
+    float _1599;
+    float _1600;
+    float _1601;
+    float _1602;
+    float _1603;
+    float _1604;
+    if (cbModelParam._m0[36u].y > 0.0)
+    {
+        float _1321 = fma(_946, cbModelParam._m0[30u].z, fma(_942, cbModelParam._m0[30u].y, cbModelParam._m0[30u].x * _938));
+        float _1325 = fma(_946, cbModelParam._m0[31u].z, fma(_942, cbModelParam._m0[31u].y, cbModelParam._m0[31u].x * _938));
+        float _1329 = fma(_946, cbModelParam._m0[32u].z, fma(_942, cbModelParam._m0[32u].y, cbModelParam._m0[32u].x * _938));
+        float _1352 = _938 + _512;
+        float _1353 = _942 + _513;
+        float _1354 = _946 + _514;
+        float _1364 = fma(_1354, cbModelParam._m0[30u].z, fma(_1353, cbModelParam._m0[30u].y, cbModelParam._m0[30u].x * _1352)) - _1321;
+        float _1365 = fma(_1354, cbModelParam._m0[31u].z, fma(_1353, cbModelParam._m0[31u].y, cbModelParam._m0[31u].x * _1352)) - _1325;
+        float _1366 = fma(_1354, cbModelParam._m0[32u].z, fma(_1353, cbModelParam._m0[32u].y, cbModelParam._m0[32u].x * _1352)) - _1329;
+        float _1370 = inversesqrt(dot(vec3(_1364, _1365, _1366), vec3(_1364, _1365, _1366)));
+        float _1383 = ((_1370 * _1364) / cbModelParam._m0[35u].x) + ((cbModelParam._m0[38u].x * ((((_1321 + cbModelParam._m0[30u].w) + 1.0) * 0.5) + (-0.5))) + 0.5);
+        float _1384 = ((_1370 * _1365) / cbModelParam._m0[35u].y) + ((cbModelParam._m0[38u].y * ((((_1325 + cbModelParam._m0[31u].w) + 1.0) * 0.5) + (-0.5))) + 0.5);
+        float _1385 = ((_1370 * _1366) / cbModelParam._m0[35u].z) + ((((((_1329 + cbModelParam._m0[32u].w) + 1.0) * 0.5) + (-0.5)) * cbModelParam._m0[38u].z) + 0.5);
+        vec4 _1387 = textureLod(sampler3D(g_IrradianceVolume2X, SS_ClampLinear), vec3(_1383, _1384, _1385), 0.0);
+        vec4 _1394 = textureLod(sampler3D(g_IrradianceVolume2Y, SS_ClampLinear), vec3(_1383, _1384, _1385), 0.0);
+        vec4 _1401 = textureLod(sampler3D(g_IrradianceVolume2Z, SS_ClampLinear), vec3(_1383, _1384, _1385), 0.0);
+        vec4 _1408 = textureLod(sampler3D(g_IrradianceVolume2W, SS_ClampLinear), vec3(_1383, _1384, _1385), 0.0);
+        float _1420 = exp2((_1387.w + (-0.5)) * 20.0) * 2.0;
+        float _1421 = _1420 * (_1387.x + (-0.5));
+        float _1422 = _1420 * (_1387.y + (-0.5));
+        float _1423 = _1420 * (_1387.z + (-0.5));
+        float _1430 = exp2((_1394.w + (-0.5)) * 20.0) * 2.0;
+        float _1431 = _1430 * (_1394.x + (-0.5));
+        float _1432 = _1430 * (_1394.y + (-0.5));
+        float _1433 = _1430 * (_1394.z + (-0.5));
+        float _1440 = exp2((_1401.w + (-0.5)) * 20.0) * 2.0;
+        float _1441 = _1440 * (_1401.x + (-0.5));
+        float _1442 = _1440 * (_1401.y + (-0.5));
+        float _1443 = _1440 * (_1401.z + (-0.5));
+        float _1450 = exp2((_1408.w + (-0.5)) * 20.0) * 2.0;
+        float _1451 = _1450 * (_1408.x + (-0.5));
+        float _1452 = _1450 * (_1408.y + (-0.5));
+        float _1453 = _1450 * (_1408.z + (-0.5));
+        float _1454 = isnan(0.0) ? _1451 : (isnan(_1451) ? 0.0 : max(_1451, 0.0));
+        float _1455 = isnan(0.0) ? _1452 : (isnan(_1452) ? 0.0 : max(_1452, 0.0));
+        float _1456 = isnan(0.0) ? _1453 : (isnan(_1453) ? 0.0 : max(_1453, 0.0));
+        float _1457 = _1421 * 0.5;
+        float _1458 = _1431 * 0.5;
+        float _1459 = _1441 * 0.5;
+        float _1460 = dot(vec3(_1457, _1458, _1459), vec3(_1457, _1458, _1459));
+        float _1465 = (_1460 == 0.0) ? 3.4028234663852885981170418348452e+38 : inversesqrt(_1460);
+        float _1473 = (dot(vec3(_512, _513, _514), vec3(_1465 * _1457, _1465 * _1458, _1465 * _1459)) + 1.0) * 0.5;
+        float _4059 = isnan(0.0) ? _1473 : (isnan(_1473) ? 0.0 : max(_1473, 0.0));
+        float _1482 = sqrt(((_1458 * _1458) + (_1457 * _1457)) + (_1459 * _1459)) / (_1454 + 9.9999997473787516355514526367188e-06);
+        float _4070 = isnan(0.0) ? _1482 : (isnan(_1482) ? 0.0 : max(_1482, 0.0));
+        float _1483 = isnan(1.0) ? _4070 : (isnan(_4070) ? 1.0 : min(_4070, 1.0));
+        float _1484 = _1483 * 2.0;
+        float _1488 = (1.0 - _1483) / (_1483 + 1.0);
+        float _4081 = isnan(0.0) ? _1488 : (isnan(_1488) ? 0.0 : max(_1488, 0.0));
+        float _1489 = isnan(1.0) ? _4081 : (isnan(_4081) ? 1.0 : min(_4081, 1.0));
+        float _1498 = ((((1.0 - _1489) * (_1484 + 2.0)) * exp2(log2(isnan(1.0) ? _4059 : (isnan(_4059) ? 1.0 : min(_4059, 1.0))) * (_1484 + 1.0))) + _1489) * _1454;
+        float _1499 = _1422 * 0.5;
+        float _1500 = _1432 * 0.5;
+        float _1501 = _1442 * 0.5;
+        float _1502 = dot(vec3(_1499, _1500, _1501), vec3(_1499, _1500, _1501));
+        float _1507 = (_1502 == 0.0) ? 3.4028234663852885981170418348452e+38 : inversesqrt(_1502);
+        float _1515 = (dot(vec3(_512, _513, _514), vec3(_1507 * _1499, _1507 * _1500, _1507 * _1501)) + 1.0) * 0.5;
+        float _4092 = isnan(0.0) ? _1515 : (isnan(_1515) ? 0.0 : max(_1515, 0.0));
+        float _1524 = sqrt(((_1500 * _1500) + (_1499 * _1499)) + (_1501 * _1501)) / (_1455 + 9.9999997473787516355514526367188e-06);
+        float _4103 = isnan(0.0) ? _1524 : (isnan(_1524) ? 0.0 : max(_1524, 0.0));
+        float _1525 = isnan(1.0) ? _4103 : (isnan(_4103) ? 1.0 : min(_4103, 1.0));
+        float _1526 = _1525 * 2.0;
+        float _1530 = (1.0 - _1525) / (_1525 + 1.0);
+        float _4114 = isnan(0.0) ? _1530 : (isnan(_1530) ? 0.0 : max(_1530, 0.0));
+        float _1531 = isnan(1.0) ? _4114 : (isnan(_4114) ? 1.0 : min(_4114, 1.0));
+        float _1540 = ((((1.0 - _1531) * (_1526 + 2.0)) * exp2(log2(isnan(1.0) ? _4092 : (isnan(_4092) ? 1.0 : min(_4092, 1.0))) * (_1526 + 1.0))) + _1531) * _1455;
+        float _1541 = _1423 * 0.5;
+        float _1542 = _1433 * 0.5;
+        float _1543 = _1443 * 0.5;
+        float _1544 = dot(vec3(_1541, _1542, _1543), vec3(_1541, _1542, _1543));
+        float _1549 = (_1544 == 0.0) ? 3.4028234663852885981170418348452e+38 : inversesqrt(_1544);
+        float _1557 = (dot(vec3(_512, _513, _514), vec3(_1549 * _1541, _1549 * _1542, _1549 * _1543)) + 1.0) * 0.5;
+        float _4125 = isnan(0.0) ? _1557 : (isnan(_1557) ? 0.0 : max(_1557, 0.0));
+        float _1566 = sqrt(((_1542 * _1542) + (_1541 * _1541)) + (_1543 * _1543)) / (_1456 + 9.9999997473787516355514526367188e-06);
+        float _4136 = isnan(0.0) ? _1566 : (isnan(_1566) ? 0.0 : max(_1566, 0.0));
+        float _1567 = isnan(1.0) ? _4136 : (isnan(_4136) ? 1.0 : min(_4136, 1.0));
+        float _1568 = _1567 * 2.0;
+        float _1572 = (1.0 - _1567) / (_1567 + 1.0);
+        float _4147 = isnan(0.0) ? _1572 : (isnan(_1572) ? 0.0 : max(_1572, 0.0));
+        float _1573 = isnan(1.0) ? _4147 : (isnan(_4147) ? 1.0 : min(_4147, 1.0));
+        float _1582 = ((((1.0 - _1573) * (_1568 + 2.0)) * exp2(log2(isnan(1.0) ? _4125 : (isnan(_4125) ? 1.0 : min(_4125, 1.0))) * (_1568 + 1.0))) + _1573) * _1456;
+        _1590 = _1423;
+        _1591 = _1422;
+        _1592 = _1421;
+        _1593 = _1433;
+        _1594 = _1432;
+        _1595 = _1431;
+        _1596 = _1443;
+        _1597 = _1442;
+        _1598 = _1441;
+        _1599 = _1456;
+        _1600 = _1455;
+        _1601 = _1454;
+        _1602 = cbModelParam._m0[36u].w * (isnan(0.0) ? _1498 : (isnan(_1498) ? 0.0 : max(_1498, 0.0)));
+        _1603 = cbModelParam._m0[36u].w * (isnan(0.0) ? _1540 : (isnan(_1540) ? 0.0 : max(_1540, 0.0)));
+        _1604 = cbModelParam._m0[36u].w * (isnan(0.0) ? _1582 : (isnan(_1582) ? 0.0 : max(_1582, 0.0)));
+    }
+    else
+    {
+        _1590 = _1278;
+        _1591 = _1278;
+        _1592 = _1278;
+        _1593 = _1278;
+        _1594 = _1278;
+        _1595 = _1278;
+        _1596 = _1278;
+        _1597 = _1278;
+        _1598 = _1278;
+        _1599 = _1278;
+        _1600 = _1278;
+        _1601 = _1278;
+        _1602 = 0.0;
+        _1603 = 0.0;
+        _1604 = 0.0;
+    }
+    float _1614 = (cbModelParam._m0[1u].x * (_1602 - _1290)) + _1290;
+    float _1615 = (cbModelParam._m0[1u].x * (_1603 - _1291)) + _1291;
+    float _1616 = (cbModelParam._m0[1u].x * (_1604 - _1292)) + _1292;
+    float _1637 = fma(_1616, cbSceneParam._m0[89u].z, fma(_1615, cbSceneParam._m0[89u].y, _1614 * cbSceneParam._m0[89u].x));
+    float _1640 = fma(_1616, cbSceneParam._m0[90u].z, fma(_1615, cbSceneParam._m0[90u].y, _1614 * cbSceneParam._m0[90u].x));
+    float _1643 = fma(_1616, cbSceneParam._m0[91u].z, fma(_1615, cbSceneParam._m0[91u].y, cbSceneParam._m0[91u].x * _1614));
+    float _1658 = _886 * 0.5;
+    float _1659 = _887 * 0.5;
+    float _1660 = _888 * 0.5;
+    float _1661 = dot(vec4(_1658, _1659, _1660, 1.0), vec4(_1592, _1595, _1598, _1601));
+    float _1664 = dot(vec4(_1658, _1659, _1660, 1.0), vec4(_1591, _1594, _1597, _1600));
+    float _1667 = dot(vec4(_1658, _1659, _1660, 1.0), vec4(_1590, _1593, _1596, _1599));
+    float _1698;
+    if (cbModelParam._m0[39u].w > 0.0)
+    {
+        float _1674 = dot(vec4(_1658, _1659, _1660, 1.0), vec4(_1277, _1281, _1284, _1287));
+        float _1678 = dot(vec4(_1658, _1659, _1660, 1.0), vec4(_1279, _1282, _1285, _1288));
+        float _1682 = dot(vec4(_1658, _1659, _1660, 1.0), vec4(_1280, _1283, _1286, _1289));
+        float _1689 = dot(vec4(cbModelParam._m0[39u]), vec4(_1658, _1659, _1660, 1.0));
+        _1698 = dot(vec3(isnan(0.0) ? _1682 : (isnan(_1682) ? 0.0 : max(_1682, 0.0)), isnan(0.0) ? _1678 : (isnan(_1678) ? 0.0 : max(_1678, 0.0)), isnan(0.0) ? _1674 : (isnan(_1674) ? 0.0 : max(_1674, 0.0))), vec3(0.2989099919795989990234375, 0.586610019207000732421875, 0.11448000371456146240234375)) / ((isnan(_1689) ? 0.0 : (isnan(0.0) ? _1689 : max(0.0, _1689))) + 9.9999997473787516355514526367188e-06);
+    }
+    else
+    {
+        _1698 = 1.0;
+    }
+    float _1709;
+    if (cbModelParam._m0[40u].w > 0.0)
+    {
+        float _1700 = dot(vec4(cbModelParam._m0[40u]), vec4(_1658, _1659, _1660, 1.0));
+        _1709 = dot(vec3(isnan(0.0) ? _1661 : (isnan(_1661) ? 0.0 : max(_1661, 0.0)), isnan(0.0) ? _1664 : (isnan(_1664) ? 0.0 : max(_1664, 0.0)), isnan(0.0) ? _1667 : (isnan(_1667) ? 0.0 : max(_1667, 0.0))), vec3(0.2989099919795989990234375, 0.586610019207000732421875, 0.11448000371456146240234375)) / ((isnan(_1700) ? 0.0 : (isnan(0.0) ? _1700 : max(0.0, _1700))) + 9.9999997473787516355514526367188e-06);
+    }
+    else
+    {
+        _1709 = 1.0;
+    }
+    float _1713 = (_1709 * cbModelParam._m0[1u].x) + (_1698 * (1.0 - cbModelParam._m0[1u].x));
+    float _1723 = cbModelParam._m0[25u].z - (cbModelParam._m0[25u].z * _749);
+    float _1724 = isnan(_1723) ? cbModelParam._m0[25u].z : (isnan(cbModelParam._m0[25u].z) ? _1723 : min(cbModelParam._m0[25u].z, _1723));
+    float _1804;
+    float _1806;
+    float _1808;
+    if (cbModelParam._m0[25u].x > 0.0)
+    {
+        float _1771 = fma(_946, cbModelParam._m0[13u].z, fma(_942, cbModelParam._m0[13u].y, cbModelParam._m0[13u].x * _938)) + cbModelParam._m0[13u].w;
+        float _1775 = fma(_946, cbModelParam._m0[14u].z, fma(_942, cbModelParam._m0[14u].y, cbModelParam._m0[14u].x * _938)) + cbModelParam._m0[14u].w;
+        float _1779 = fma(_946, cbModelParam._m0[15u].z, fma(_942, cbModelParam._m0[15u].y, cbModelParam._m0[15u].x * _938)) + cbModelParam._m0[15u].w;
+        float _1782 = fma(_888, cbModelParam._m0[13u].z, fma(_887, cbModelParam._m0[13u].y, cbModelParam._m0[13u].x * _886));
+        float _1785 = fma(_888, cbModelParam._m0[14u].z, fma(_887, cbModelParam._m0[14u].y, cbModelParam._m0[14u].x * _886));
+        float _1788 = fma(_888, cbModelParam._m0[15u].z, fma(_887, cbModelParam._m0[15u].y, cbModelParam._m0[15u].x * _886));
+        float _1816;
+        if (_1782 > 0.0)
+        {
+            _1816 = abs((1.0 - _1771) / _1782);
+        }
+        else
+        {
+            float frontier_phi_19_17_ladder;
+            if (_1782 < 0.0)
+            {
+                frontier_phi_19_17_ladder = abs((_1771 + 1.0) / _1782);
+            }
+            else
+            {
+                frontier_phi_19_17_ladder = 5000.0;
+            }
+            _1816 = frontier_phi_19_17_ladder;
+        }
+        float _2023;
+        if (_1785 > 0.0)
+        {
+            _2023 = abs((1.0 - _1775) / _1785);
+        }
+        else
+        {
+            float frontier_phi_28_24_ladder;
+            if (_1785 < 0.0)
+            {
+                frontier_phi_28_24_ladder = abs((_1775 + 1.0) / _1785);
+            }
+            else
+            {
+                frontier_phi_28_24_ladder = 5000.0;
+            }
+            _2023 = frontier_phi_28_24_ladder;
+        }
+        float _2277;
+        if (_1788 > 0.0)
+        {
+            _2277 = abs((1.0 - _1779) / _1788);
+        }
+        else
+        {
+            float frontier_phi_40_35_ladder;
+            if (_1788 < 0.0)
+            {
+                frontier_phi_40_35_ladder = abs((_1779 + 1.0) / _1788);
+            }
+            else
+            {
+                frontier_phi_40_35_ladder = 5000.0;
+            }
+            _2277 = frontier_phi_40_35_ladder;
+        }
+        float _2279 = isnan(_2023) ? _1816 : (isnan(_1816) ? _2023 : min(_1816, _2023));
+        float _2280 = isnan(_2277) ? _2279 : (isnan(_2279) ? _2277 : min(_2279, _2277));
+        float _2284 = (_2280 * _1782) + _1771;
+        float _2285 = (_2280 * _1785) + _1775;
+        float _2286 = (_2280 * _1788) + _1779;
+        float _2287 = _2280 * 9.9999997473787516355514526367188e-05;
+        float _2289 = (-1.0) - _2287;
+        float _2291 = _2287 + 1.0;
+        float frontier_phi_18_40_ladder;
+        float frontier_phi_18_40_ladder_1;
+        float frontier_phi_18_40_ladder_2;
+        if ((_2286 > _2291) || ((_2286 < _2289) || ((_2285 > _2291) || ((_2285 < _2289) || ((_2284 < _2289) || (_2284 > _2291))))))
+        {
+            frontier_phi_18_40_ladder = 0.0;
+            frontier_phi_18_40_ladder_1 = 0.0;
+            frontier_phi_18_40_ladder_2 = 0.0;
+        }
+        else
+        {
+            vec4 _2414 = textureLod(samplerCube(g_IBLTexture, SS_WrapLinear), vec3((cbModelParam._m0[9u].w - cbModelParam._m0[7u].x) + fma(_2286, cbModelParam._m0[9u].z, fma(_2285, cbModelParam._m0[9u].y, _2284 * cbModelParam._m0[9u].x)), (cbModelParam._m0[10u].w - cbModelParam._m0[7u].y) + fma(_2286, cbModelParam._m0[10u].z, fma(_2285, cbModelParam._m0[10u].y, _2284 * cbModelParam._m0[10u].x)), (cbModelParam._m0[11u].w - cbModelParam._m0[7u].z) + fma(_2286, cbModelParam._m0[11u].z, fma(_2285, cbModelParam._m0[11u].y, _2284 * cbModelParam._m0[11u].x))), _1724);
+            frontier_phi_18_40_ladder = _2414.z * cbModelParam._m0[1u].y;
+            frontier_phi_18_40_ladder_1 = _2414.y * cbModelParam._m0[1u].y;
+            frontier_phi_18_40_ladder_2 = _2414.x * cbModelParam._m0[1u].y;
+        }
+        _1804 = frontier_phi_18_40_ladder_2;
+        _1806 = frontier_phi_18_40_ladder_1;
+        _1808 = frontier_phi_18_40_ladder;
+    }
+    else
+    {
+        vec4 _1792 = textureLod(samplerCube(g_IBLTexture, SS_WrapLinear), vec3(_886, _887, _888), _1724);
+        _1804 = _1792.x * cbModelParam._m0[1u].y;
+        _1806 = _1792.y * cbModelParam._m0[1u].y;
+        _1808 = _1792.z * cbModelParam._m0[1u].y;
+    }
+    float _1812 = cbModelParam._m0[25u].w - (cbModelParam._m0[25u].w * _749);
+    float _1813 = isnan(_1812) ? cbModelParam._m0[25u].w : (isnan(cbModelParam._m0[25u].w) ? _1812 : min(cbModelParam._m0[25u].w, _1812));
+    float _1906;
+    float _1908;
+    float _1910;
+    if (cbModelParam._m0[25u].y > 0.0)
+    {
+        float _1870 = fma(_946, cbModelParam._m0[21u].z, fma(_942, cbModelParam._m0[21u].y, cbModelParam._m0[21u].x * _938)) + cbModelParam._m0[21u].w;
+        float _1874 = fma(_946, cbModelParam._m0[22u].z, fma(_942, cbModelParam._m0[22u].y, cbModelParam._m0[22u].x * _938)) + cbModelParam._m0[22u].w;
+        float _1878 = fma(_946, cbModelParam._m0[23u].z, fma(_942, cbModelParam._m0[23u].y, cbModelParam._m0[23u].x * _938)) + cbModelParam._m0[23u].w;
+        float _1881 = fma(_888, cbModelParam._m0[21u].z, fma(_887, cbModelParam._m0[21u].y, cbModelParam._m0[21u].x * _886));
+        float _1884 = fma(_888, cbModelParam._m0[22u].z, fma(_887, cbModelParam._m0[22u].y, cbModelParam._m0[22u].x * _886));
+        float _1887 = fma(_888, cbModelParam._m0[23u].z, fma(_887, cbModelParam._m0[23u].y, cbModelParam._m0[23u].x * _886));
+        float _2028;
+        if (_1881 > 0.0)
+        {
+            _2028 = abs((1.0 - _1870) / _1881);
+        }
+        else
+        {
+            float frontier_phi_30_26_ladder;
+            if (_1881 < 0.0)
+            {
+                frontier_phi_30_26_ladder = abs((_1870 + 1.0) / _1881);
+            }
+            else
+            {
+                frontier_phi_30_26_ladder = 5000.0;
+            }
+            _2028 = frontier_phi_30_26_ladder;
+        }
+        float _2304;
+        if (_1884 > 0.0)
+        {
+            _2304 = abs((1.0 - _1874) / _1884);
+        }
+        else
+        {
+            float frontier_phi_42_37_ladder;
+            if (_1884 < 0.0)
+            {
+                frontier_phi_42_37_ladder = abs((_1874 + 1.0) / _1884);
+            }
+            else
+            {
+                frontier_phi_42_37_ladder = 5000.0;
+            }
+            _2304 = frontier_phi_42_37_ladder;
+        }
+        float _2517;
+        if (_1887 > 0.0)
+        {
+            _2517 = abs((1.0 - _1878) / _1887);
+        }
+        else
+        {
+            float frontier_phi_51_48_ladder;
+            if (_1887 < 0.0)
+            {
+                frontier_phi_51_48_ladder = abs((_1878 + 1.0) / _1887);
+            }
+            else
+            {
+                frontier_phi_51_48_ladder = 5000.0;
+            }
+            _2517 = frontier_phi_51_48_ladder;
+        }
+        float _2519 = isnan(_2304) ? _2028 : (isnan(_2028) ? _2304 : min(_2028, _2304));
+        float _2520 = isnan(_2517) ? _2519 : (isnan(_2519) ? _2517 : min(_2519, _2517));
+        float _2524 = (_2520 * _1881) + _1870;
+        float _2525 = (_2520 * _1884) + _1874;
+        float _2526 = (_2520 * _1887) + _1878;
+        float _2527 = _2520 * 9.9999997473787516355514526367188e-05;
+        float _2528 = (-1.0) - _2527;
+        float _2530 = _2527 + 1.0;
+        float frontier_phi_27_51_ladder;
+        float frontier_phi_27_51_ladder_1;
+        float frontier_phi_27_51_ladder_2;
+        if ((_2526 > _2530) || ((_2526 < _2528) || ((_2525 > _2530) || ((_2525 < _2528) || ((_2524 < _2528) || (_2524 > _2530))))))
+        {
+            frontier_phi_27_51_ladder = 0.0;
+            frontier_phi_27_51_ladder_1 = 0.0;
+            frontier_phi_27_51_ladder_2 = 0.0;
+        }
+        else
+        {
+            vec4 _2750 = textureLod(samplerCube(g_IBLTexture2, SS_WrapLinear), vec3((cbModelParam._m0[17u].w - cbModelParam._m0[8u].x) + fma(_2526, cbModelParam._m0[17u].z, fma(_2525, cbModelParam._m0[17u].y, _2524 * cbModelParam._m0[17u].x)), (cbModelParam._m0[18u].w - cbModelParam._m0[8u].y) + fma(_2526, cbModelParam._m0[18u].z, fma(_2525, cbModelParam._m0[18u].y, _2524 * cbModelParam._m0[18u].x)), (cbModelParam._m0[19u].w - cbModelParam._m0[8u].z) + fma(_2526, cbModelParam._m0[19u].z, fma(_2525, cbModelParam._m0[19u].y, _2524 * cbModelParam._m0[19u].x))), _1813);
+            frontier_phi_27_51_ladder = _2750.z * cbModelParam._m0[1u].z;
+            frontier_phi_27_51_ladder_1 = _2750.y * cbModelParam._m0[1u].z;
+            frontier_phi_27_51_ladder_2 = _2750.x * cbModelParam._m0[1u].z;
+        }
+        _1906 = frontier_phi_27_51_ladder_2;
+        _1908 = frontier_phi_27_51_ladder_1;
+        _1910 = frontier_phi_27_51_ladder;
+    }
+    else
+    {
+        vec4 _1890 = textureLod(samplerCube(g_IBLTexture2, SS_WrapLinear), vec3(_886, _887, _888), _1813);
+        _1906 = _1890.x * cbModelParam._m0[1u].z;
+        _1908 = _1890.y * cbModelParam._m0[1u].z;
+        _1910 = _1890.z * cbModelParam._m0[1u].z;
+    }
+    float _1923 = (((_909 * _867) + _910) * _881) * ((cbModelParam._m0[1u].w * (_1906 - _1804)) + _1804);
+    float _1925 = (((_909 * _868) + _910) * _881) * ((cbModelParam._m0[1u].w * (_1908 - _1806)) + _1806);
+    float _1927 = (((_909 * _869) + _910) * _881) * ((cbModelParam._m0[1u].w * (_1910 - _1808)) + _1808);
+    float _1930 = fma(_1927, cbSceneParam._m0[89u].z, fma(_1925, cbSceneParam._m0[89u].y, _1923 * cbSceneParam._m0[89u].x));
+    float _1933 = fma(_1927, cbSceneParam._m0[90u].z, fma(_1925, cbSceneParam._m0[90u].y, _1923 * cbSceneParam._m0[90u].x));
+    float _1936 = fma(_1927, cbSceneParam._m0[91u].z, fma(_1925, cbSceneParam._m0[91u].y, _1923 * cbSceneParam._m0[91u].x));
+    uvec4 _1946 = floatBitsToUint(cbInstanceData._m0[_773 + 5u]);
+    uint _1948 = _1946.x * 14u;
+    uint _1949 = _1948 + 13u;
+    float _1956 = _881 + (-1.0);
+    float _1961 = (cbLight._m0[_1949].x * _1956) + 1.0;
+    float _1962 = (cbLight._m0[_1949].y * _1956) + 1.0;
+    float _1963 = (cbLight._m0[_1949].z * _1956) + 1.0;
+    float _1964 = (cbLight._m0[_1949].w * _1956) + 1.0;
+    uint _1965 = _1948 + 5u;
+    float _1971 = isnan(1.0) ? _1962 : (isnan(_1962) ? 1.0 : min(_1962, 1.0));
+    uint _1975 = _1948 + 4u;
+    float _1982 = isnan(1.0) ? _1961 : (isnan(_1961) ? 1.0 : min(_1961, 1.0));
+    uint _1986 = _1948 | 1u;
+    float _1997 = dot(vec3(cbLight._m0[_1948].xyz), vec3(_512, _513, _514));
+    float _2000 = dot(vec3(cbLight._m0[_1986].xyz), vec3(_512, _513, _514));
+    float _4283 = isnan(0.0) ? _1997 : (isnan(_1997) ? 0.0 : max(_1997, 0.0));
+    float _4294 = isnan(0.0) ? _2000 : (isnan(_2000) ? 0.0 : max(_2000, 0.0));
+    float _2005 = (isnan(1.0) ? _4283 : (isnan(_4283) ? 1.0 : min(_4283, 1.0))) * 0.3183098733425140380859375;
+    float _2007 = (isnan(1.0) ? _4294 : (isnan(_4294) ? 1.0 : min(_4294, 1.0))) * 0.3183098733425140380859375;
+    float _2014 = ((cbLight._m0[_1965].x * _1971) * _2007) + ((cbLight._m0[_1975].x * _1982) * _2005);
+    float _2015 = ((_1971 * cbLight._m0[_1965].y) * _2007) + ((_1982 * cbLight._m0[_1975].y) * _2005);
+    float _2016 = ((_1971 * cbLight._m0[_1965].z) * _2007) + ((_1982 * cbLight._m0[_1975].z) * _2005);
+    uvec4 _2020 = floatBitsToUint(cbLight._m0[_1948 + 12u]);
+    bool _2022 = _2020.x == 0u;
+    float _2033;
+    float _2035;
+    float _2037;
+    if (_2022)
+    {
+        _2033 = _2014;
+        _2035 = _2015;
+        _2037 = _2016;
+    }
+    else
+    {
+        uint _2041 = _1948 + 6u;
+        float _2057 = (dot(vec3(cbLight._m0[_1948 + 2u].xyz), vec3(_512, _513, _514)) * 0.5) + 0.5;
+        float _2058 = _2057 * _2057;
+        float _4305 = isnan(0.0) ? _2058 : (isnan(_2058) ? 0.0 : max(_2058, 0.0));
+        float _2059 = isnan(1.0) ? _4305 : (isnan(_4305) ? 1.0 : min(_4305, 1.0));
+        float _2060 = isnan(1.0) ? _1963 : (isnan(_1963) ? 1.0 : min(_1963, 1.0));
+        _2033 = (((cbLight._m0[_2041].x * 0.3183098733425140380859375) * _2059) * _2060) + _2014;
+        _2035 = (((cbLight._m0[_2041].y * 0.3183098733425140380859375) * _2059) * _2060) + _2015;
+        _2037 = (((cbLight._m0[_2041].z * 0.3183098733425140380859375) * _2059) * _2060) + _2016;
+    }
+    bool _2040 = _2020.y == 0u;
+    float _2078;
+    float _2080;
+    float _2082;
+    if (_2040)
+    {
+        _2078 = _2033;
+        _2080 = _2035;
+        _2082 = _2037;
+    }
+    else
+    {
+        uint _2248 = _1948 + 7u;
+        float _2264 = (dot(vec3(cbLight._m0[_1948 + 3u].xyz), vec3(_512, _513, _514)) * 0.5) + 0.5;
+        float _2265 = _2264 * _2264;
+        float _4321 = isnan(0.0) ? _2265 : (isnan(_2265) ? 0.0 : max(_2265, 0.0));
+        float _2266 = isnan(1.0) ? _4321 : (isnan(_4321) ? 1.0 : min(_4321, 1.0));
+        float _2267 = isnan(1.0) ? _1964 : (isnan(_1964) ? 1.0 : min(_1964, 1.0));
+        _2078 = (((cbLight._m0[_2248].x * 0.3183098733425140380859375) * _2266) * _2267) + _2033;
+        _2080 = (((cbLight._m0[_2248].y * 0.3183098733425140380859375) * _2266) * _2267) + _2035;
+        _2082 = (((cbLight._m0[_2248].z * 0.3183098733425140380859375) * _2266) * _2267) + _2037;
+    }
+    uint _2085 = _1948 + 8u;
+    float _2098 = 1.0 - (sqrt((1.0 - (0.07500000298023223876953125 / cbLight._m0[_1948].w)) * _749) * 0.949999988079071044921875);
+    float _2099 = _2098 * _2098;
+    float _2100 = cbLight._m0[_1948].x + _539;
+    float _2101 = cbLight._m0[_1948].y + _540;
+    float _2102 = cbLight._m0[_1948].z + _541;
+    float _2106 = inversesqrt(dot(vec3(_2100, _2101, _2102), vec3(_2100, _2101, _2102)));
+    float _2107 = _2106 * _2100;
+    float _2108 = _2106 * _2101;
+    float _2109 = _2106 * _2102;
+    float _2110 = dot(vec3(_512, _513, _514), vec3(cbLight._m0[_1948].xyz));
+    float _4337 = isnan(0.0) ? _2110 : (isnan(_2110) ? 0.0 : max(_2110, 0.0));
+    float _2113 = isnan(1.0) ? _4337 : (isnan(_4337) ? 1.0 : min(_4337, 1.0));
+    float _4348 = isnan(0.0) ? _542 : (isnan(_542) ? 0.0 : max(_542, 0.0));
+    float _2114 = isnan(1.0) ? _4348 : (isnan(_4348) ? 1.0 : min(_4348, 1.0));
+    float _2115 = dot(vec3(_512, _513, _514), vec3(_2107, _2108, _2109));
+    float _4359 = isnan(0.0) ? _2115 : (isnan(_2115) ? 0.0 : max(_2115, 0.0));
+    float _2118 = isnan(1.0) ? _4359 : (isnan(_4359) ? 1.0 : min(_4359, 1.0));
+    float _2119 = dot(vec3(cbLight._m0[_1948].xyz), vec3(_2107, _2108, _2109));
+    float _4370 = isnan(0.0) ? _2119 : (isnan(_2119) ? 0.0 : max(_2119, 0.0));
+    float _2123 = _2099 * _2099;
+    float _2127 = ((_2118 * _2118) * (_2123 + (-1.0))) + 1.0;
+    float _2135 = exp2(log2(1.0 - (isnan(1.0) ? _4370 : (isnan(_4370) ? 1.0 : min(_4370, 1.0)))) * 5.0);
+    float _2136 = 0.959999978542327880859375 - _864;
+    float _2138 = 0.959999978542327880859375 - _865;
+    float _2139 = 0.959999978542327880859375 - _866;
+    float _2146 = 1.0 - _2099;
+    float _2157 = (0.5 / (((_2114 * ((_2113 * _2146) + _2099)) + 9.9999999392252902907785028219223e-09) + (((_2114 * _2146) + _2099) * _2113))) * _2113;
+    float _4381 = isnan(0.0) ? _2157 : (isnan(_2157) ? 0.0 : max(_2157, 0.0));
+    float _2159 = (isnan(1.0) ? _4381 : (isnan(_4381) ? 1.0 : min(_4381, 1.0))) * (_2123 / ((_2127 * _2127) * 3.141590118408203125));
+    uint _2170 = _1948 + 9u;
+    float _2181 = 1.0 - (sqrt((1.0 - (0.07500000298023223876953125 / cbLight._m0[_1986].w)) * _749) * 0.949999988079071044921875);
+    float _2182 = _2181 * _2181;
+    float _2183 = cbLight._m0[_1986].x + _539;
+    float _2184 = cbLight._m0[_1986].y + _540;
+    float _2185 = cbLight._m0[_1986].z + _541;
+    float _2189 = inversesqrt(dot(vec3(_2183, _2184, _2185), vec3(_2183, _2184, _2185)));
+    float _2190 = _2189 * _2183;
+    float _2191 = _2189 * _2184;
+    float _2192 = _2189 * _2185;
+    float _2193 = dot(vec3(_512, _513, _514), vec3(cbLight._m0[_1986].xyz));
+    float _4392 = isnan(0.0) ? _2193 : (isnan(_2193) ? 0.0 : max(_2193, 0.0));
+    float _2196 = isnan(1.0) ? _4392 : (isnan(_4392) ? 1.0 : min(_4392, 1.0));
+    float _2197 = dot(vec3(_512, _513, _514), vec3(_2190, _2191, _2192));
+    float _4403 = isnan(0.0) ? _2197 : (isnan(_2197) ? 0.0 : max(_2197, 0.0));
+    float _2200 = isnan(1.0) ? _4403 : (isnan(_4403) ? 1.0 : min(_4403, 1.0));
+    float _2201 = dot(vec3(cbLight._m0[_1986].xyz), vec3(_2190, _2191, _2192));
+    float _4414 = isnan(0.0) ? _2201 : (isnan(_2201) ? 0.0 : max(_2201, 0.0));
+    float _2205 = _2182 * _2182;
+    float _2209 = ((_2200 * _2200) * (_2205 + (-1.0))) + 1.0;
+    float _2216 = exp2(log2(1.0 - (isnan(1.0) ? _4414 : (isnan(_4414) ? 1.0 : min(_4414, 1.0)))) * 5.0);
+    float _2223 = 1.0 - _2182;
+    float _2233 = (0.5 / (((_2114 * ((_2196 * _2223) + _2182)) + 9.9999999392252902907785028219223e-09) + (((_2114 * _2223) + _2182) * _2196))) * _2196;
+    float _4425 = isnan(0.0) ? _2233 : (isnan(_2233) ? 0.0 : max(_2233, 0.0));
+    float _2235 = (isnan(1.0) ? _4425 : (isnan(_4425) ? 1.0 : min(_4425, 1.0))) * (_2205 / ((_2209 * _2209) * 3.141590118408203125));
+    float _2245 = (((((_2216 * _2136) + _867) * cbLight._m0[_2170].x) * _2235) * _1971) + (((((_2135 * _2136) + _867) * cbLight._m0[_2085].x) * _2159) * _1982);
+    float _2246 = (((((_2216 * _2138) + _868) * cbLight._m0[_2170].y) * _2235) * _1971) + (((((_2135 * _2138) + _868) * cbLight._m0[_2085].y) * _2159) * _1982);
+    float _2247 = (((((_2216 * _2139) + _869) * cbLight._m0[_2170].z) * _2235) * _1971) + (((((_2135 * _2139) + _869) * cbLight._m0[_2085].z) * _2159) * _1982);
+    float _2309;
+    float _2311;
+    float _2313;
+    if (_2022)
+    {
+        _2309 = _2245;
+        _2311 = _2246;
+        _2313 = _2247;
+    }
+    else
+    {
+        uint _2315 = _1948 + 2u;
+        uint _2319 = _1948 + 10u;
+        float _2333 = 1.0 - (sqrt((1.0 - (0.07500000298023223876953125 / cbLight._m0[_2315].w)) * _749) * 0.949999988079071044921875);
+        float _2334 = _2333 * _2333;
+        float _2335 = cbLight._m0[_2315].x + _539;
+        float _2336 = cbLight._m0[_2315].y + _540;
+        float _2337 = cbLight._m0[_2315].z + _541;
+        float _2341 = inversesqrt(dot(vec3(_2335, _2336, _2337), vec3(_2335, _2336, _2337)));
+        float _2342 = _2341 * _2335;
+        float _2343 = _2341 * _2336;
+        float _2344 = _2341 * _2337;
+        float _2345 = dot(vec3(_512, _513, _514), vec3(cbLight._m0[_2315].xyz));
+        float _4436 = isnan(0.0) ? _2345 : (isnan(_2345) ? 0.0 : max(_2345, 0.0));
+        float _2348 = isnan(1.0) ? _4436 : (isnan(_4436) ? 1.0 : min(_4436, 1.0));
+        float _2349 = dot(vec3(_512, _513, _514), vec3(_2342, _2343, _2344));
+        float _4447 = isnan(0.0) ? _2349 : (isnan(_2349) ? 0.0 : max(_2349, 0.0));
+        float _2352 = isnan(1.0) ? _4447 : (isnan(_4447) ? 1.0 : min(_4447, 1.0));
+        float _2353 = dot(vec3(cbLight._m0[_2315].xyz), vec3(_2342, _2343, _2344));
+        float _4458 = isnan(0.0) ? _2353 : (isnan(_2353) ? 0.0 : max(_2353, 0.0));
+        float _2357 = _2334 * _2334;
+        float _2361 = ((_2352 * _2352) * (_2357 + (-1.0))) + 1.0;
+        float _2368 = exp2(log2(1.0 - (isnan(1.0) ? _4458 : (isnan(_4458) ? 1.0 : min(_4458, 1.0)))) * 5.0);
+        float _2375 = 1.0 - _2334;
+        float _2385 = (0.5 / (((_2114 * ((_2348 * _2375) + _2334)) + 9.9999999392252902907785028219223e-09) + (((_2114 * _2375) + _2334) * _2348))) * _2348;
+        float _4469 = isnan(0.0) ? _2385 : (isnan(_2385) ? 0.0 : max(_2385, 0.0));
+        float _2387 = (isnan(1.0) ? _4469 : (isnan(_4469) ? 1.0 : min(_4469, 1.0))) * (_2357 / ((_2361 * _2361) * 3.141590118408203125));
+        float _2388 = isnan(1.0) ? _1963 : (isnan(_1963) ? 1.0 : min(_1963, 1.0));
+        _2309 = (((((_2368 * _2136) + _867) * cbLight._m0[_2319].x) * _2387) * _2388) + _2245;
+        _2311 = (((((_2368 * _2138) + _868) * cbLight._m0[_2319].y) * _2387) * _2388) + _2246;
+        _2313 = (((((_2368 * _2139) + _869) * cbLight._m0[_2319].z) * _2387) * _2388) + _2247;
+    }
+    float _2423;
+    float _2425;
+    float _2427;
+    if (_2040)
+    {
+        _2423 = _2309;
+        _2425 = _2311;
+        _2427 = _2313;
+    }
+    else
+    {
+        uint _2434 = _1948 + 3u;
+        uint _2438 = _1948 + 11u;
+        float _2452 = 1.0 - (sqrt((1.0 - (0.07500000298023223876953125 / cbLight._m0[_2434].w)) * _749) * 0.949999988079071044921875);
+        float _2453 = _2452 * _2452;
+        float _2454 = cbLight._m0[_2434].x + _539;
+        float _2455 = cbLight._m0[_2434].y + _540;
+        float _2456 = cbLight._m0[_2434].z + _541;
+        float _2460 = inversesqrt(dot(vec3(_2454, _2455, _2456), vec3(_2454, _2455, _2456)));
+        float _2461 = _2460 * _2454;
+        float _2462 = _2460 * _2455;
+        float _2463 = _2460 * _2456;
+        float _2464 = dot(vec3(_512, _513, _514), vec3(cbLight._m0[_2434].xyz));
+        float _4485 = isnan(0.0) ? _2464 : (isnan(_2464) ? 0.0 : max(_2464, 0.0));
+        float _2467 = isnan(1.0) ? _4485 : (isnan(_4485) ? 1.0 : min(_4485, 1.0));
+        float _2468 = dot(vec3(_512, _513, _514), vec3(_2461, _2462, _2463));
+        float _4496 = isnan(0.0) ? _2468 : (isnan(_2468) ? 0.0 : max(_2468, 0.0));
+        float _2471 = isnan(1.0) ? _4496 : (isnan(_4496) ? 1.0 : min(_4496, 1.0));
+        float _2472 = dot(vec3(cbLight._m0[_2434].xyz), vec3(_2461, _2462, _2463));
+        float _4507 = isnan(0.0) ? _2472 : (isnan(_2472) ? 0.0 : max(_2472, 0.0));
+        float _2476 = _2453 * _2453;
+        float _2480 = ((_2471 * _2471) * (_2476 + (-1.0))) + 1.0;
+        float _2487 = exp2(log2(1.0 - (isnan(1.0) ? _4507 : (isnan(_4507) ? 1.0 : min(_4507, 1.0)))) * 5.0);
+        float _2494 = 1.0 - _2453;
+        float _2504 = (0.5 / (((_2114 * ((_2467 * _2494) + _2453)) + 9.9999999392252902907785028219223e-09) + (((_2114 * _2494) + _2453) * _2467))) * _2467;
+        float _4518 = isnan(0.0) ? _2504 : (isnan(_2504) ? 0.0 : max(_2504, 0.0));
+        float _2506 = (isnan(1.0) ? _4518 : (isnan(_4518) ? 1.0 : min(_4518, 1.0))) * (_2476 / ((_2480 * _2480) * 3.141590118408203125));
+        float _2507 = isnan(1.0) ? _1964 : (isnan(_1964) ? 1.0 : min(_1964, 1.0));
+        _2423 = (((((_2487 * _2136) + _867) * cbLight._m0[_2438].x) * _2506) * _2507) + _2309;
+        _2425 = (((((_2487 * _2138) + _868) * cbLight._m0[_2438].y) * _2506) * _2507) + _2311;
+        _2427 = (((((_2487 * _2139) + _869) * cbLight._m0[_2438].z) * _2506) * _2507) + _2313;
+    }
+    float _2641;
+    float _2643;
+    float _2645;
+    float _2647;
+    float _2649;
+    float _2651;
+    if (_1946.y == 0u)
+    {
+        float _2582 = fma(POSITION_1.w, cbSceneParam._m0[15u].w, fma(POSITION_1.z, cbSceneParam._m0[15u].z, fma(POSITION_1.y, cbSceneParam._m0[15u].y, cbSceneParam._m0[15u].x * POSITION_1.x)));
+        float _2583 = fma(POSITION_1.w, cbSceneParam._m0[12u].w, fma(POSITION_1.z, cbSceneParam._m0[12u].z, fma(POSITION_1.y, cbSceneParam._m0[12u].y, cbSceneParam._m0[12u].x * POSITION_1.x))) / _2582;
+        float _2584 = fma(POSITION_1.w, cbSceneParam._m0[13u].w, fma(POSITION_1.z, cbSceneParam._m0[13u].z, fma(POSITION_1.y, cbSceneParam._m0[13u].y, cbSceneParam._m0[13u].x * POSITION_1.x))) / _2582;
+        float _2585 = fma(POSITION_1.w, cbSceneParam._m0[14u].w, fma(POSITION_1.z, cbSceneParam._m0[14u].z, fma(POSITION_1.y, cbSceneParam._m0[14u].y, cbSceneParam._m0[14u].x * POSITION_1.x))) / _2582;
+        uvec4 _2597 = floatBitsToUint(cbSceneParam._m0[66u]);
+        uint _2598 = _2597.x;
+        uint _2609 = uint((float(_2597.y) * floor(float(uint(cbSceneParam._m0[85u].y * _672) / _2598))) + floor(float(uint(cbSceneParam._m0[85u].x * _671) / _2598)));
+        float _2619 = (log2(_2585 - cbSceneParam._m0[65u].x) - cbSceneParam._m0[65u].z) / cbSceneParam._m0[65u].y;
+        float _2620 = isnan(0.0) ? _2619 : (isnan(_2619) ? 0.0 : max(_2619, 0.0));
+        uint _2623 = uint(isnan(14.0) ? _2620 : (isnan(_2620) ? 14.0 : min(_2620, 14.0)));
+        uvec4 _2628 = texelFetch(g_lightClusterGridBuffer, int(((_2623 << 2u) + (_2609 << 6u)) >> 2u));
+        uint _2629 = _2628.x;
+        uint _2630 = _2597.z;
+        float _2755;
+        float _2757;
+        float _2759;
+        float _2761;
+        float _2763;
+        float _2765;
+        if (((((1u << ((_2630 >> 4u) & 15u)) + 4294967295u) & _2629) == 0u) || ((_2630 & 240u) == 0u))
+        {
+            _2755 = 0.0;
+            _2757 = 0.0;
+            _2759 = 0.0;
+            _2761 = 0.0;
+            _2763 = 0.0;
+            _2765 = 0.0;
+        }
+        else
+        {
+            float _2756;
+            float _2758;
+            float _2760;
+            float _2762;
+            float _2764;
+            float _2766;
+            float _2916 = 0.0;
+            float _2917 = 0.0;
+            float _2918 = 0.0;
+            float _2919 = 0.0;
+            float _2920 = 0.0;
+            float _2921 = 0.0;
+            uint _2922 = 0u;
+            uint _2931;
+            bool _2932;
+            for (;;)
+            {
+                _2931 = texelFetch(g_lightClassification, int((((_2623 << 5u) + (_2609 << 9u)) + (_2922 << 2u)) >> 2u)).x;
+                _2932 = _2931 == 0u;
+                float frontier_phi_68_pred;
+                float frontier_phi_68_pred_1;
+                float frontier_phi_68_pred_2;
+                float frontier_phi_68_pred_3;
+                float frontier_phi_68_pred_4;
+                float frontier_phi_68_pred_5;
+                if (_2932)
+                {
+                    frontier_phi_68_pred = _2918;
+                    frontier_phi_68_pred_1 = _2921;
+                    frontier_phi_68_pred_2 = _2920;
+                    frontier_phi_68_pred_3 = _2919;
+                    frontier_phi_68_pred_4 = _2917;
+                    frontier_phi_68_pred_5 = _2916;
+                }
+                else
+                {
+                    float _3061;
+                    float _3062;
+                    float _3063;
+                    float _3064;
+                    float _3065;
+                    float _3066;
+                    uint _3067;
+                    _3061 = _2916;
+                    _3062 = _2917;
+                    _3063 = _2918;
+                    _3064 = _2919;
+                    _3065 = _2920;
+                    _3066 = _2921;
+                    _3067 = _2931;
+                    float _2988;
+                    float _2989;
+                    float _2990;
+                    float _2991;
+                    float _2992;
+                    float _2993;
+                    for (;;)
+                    {
+                        uint _3071 = uint(findLSB(_3067)) + (_2922 << 5u);
+                        uint _3068 = (_3067 + 4294967295u) & _3067;
+                        uint _3073 = _3071 * 48u;
+                        vec4 _3087 = uintBitsToFloat(uvec4(texelFetch(g_PointLightRenderingBuffer, int(_3073)).x, texelFetch(g_PointLightRenderingBuffer, int(_3073 + 1u)).x, texelFetch(g_PointLightRenderingBuffer, int(_3073 + 2u)).x, texelFetch(g_PointLightRenderingBuffer, int(_3073 + 3u)).x));
+                        uint _3093 = (_3071 * 48u) + 4u;
+                        vec4 _3106 = uintBitsToFloat(uvec4(texelFetch(g_PointLightRenderingBuffer, int(_3093)).x, texelFetch(g_PointLightRenderingBuffer, int(_3093 + 1u)).x, texelFetch(g_PointLightRenderingBuffer, int(_3093 + 2u)).x, texelFetch(g_PointLightRenderingBuffer, int(_3093 + 3u)).x));
+                        uint _3112 = (_3071 * 48u) + 8u;
+                        vec3 _3123 = uintBitsToFloat(uvec3(texelFetch(g_PointLightRenderingBuffer, int(_3112)).x, texelFetch(g_PointLightRenderingBuffer, int(_3112 + 1u)).x, texelFetch(g_PointLightRenderingBuffer, int(_3112 + 2u)).x));
+                        float _3127 = _3087.x - _2583;
+                        float _3128 = _3087.y - _2584;
+                        float _3129 = _3087.z - _2585;
+                        float _3130 = dot(vec3(_3127, _3128, _3129), vec3(_3127, _3128, _3129));
+                        float _3133 = inversesqrt(_3130);
+                        float _3134 = _3133 * _3127;
+                        float _3135 = _3133 * _3128;
+                        float _3136 = _3133 * _3129;
+                        float _3137 = dot(vec3(_694, _697, _700), vec3(_3134, _3135, _3136));
+                        float _3142 = 1.0 - (_3130 * _3087.w);
+                        float _4544 = isnan(0.0) ? _3142 : (isnan(_3142) ? 0.0 : max(_3142, 0.0));
+                        float _3143 = isnan(1.0) ? _4544 : (isnan(_4544) ? 1.0 : min(_4544, 1.0));
+                        float _3144 = sqrt(_3130) * _3106.w;
+                        float _3147 = 1.39999997615814208984375 / (_3144 + 1.39999997615814208984375);
+                        float _3148 = _3147 * _3147;
+                        float _3151 = ((1.0 - _3148) * _3137) + _3148;
+                        float _3154 = _3144 * _3144;
+                        float _3157 = ((isnan(0.0) ? _3151 : (isnan(_3151) ? 0.0 : max(_3151, 0.0))) * _3143) / ((_3154 * 0.699999988079071044921875) + 1.0);
+                        float _3161 = (-0.0) - _2583;
+                        float _3162 = (-0.0) - _2584;
+                        float _3163 = (-0.0) - _2585;
+                        float _3167 = inversesqrt(dot(vec3(_3161, _3162, _3163), vec3(_3161, _3162, _3163)));
+                        float _3168 = _3167 * _3161;
+                        float _3169 = _3167 * _3162;
+                        float _3170 = _3167 * _3163;
+                        float _3178 = exp2(log2(1.0 / ((_3154 * 3.5) + 5.0)) * 0.25);
+                        float _3179 = 1.0 - _891;
+                        float _3186 = sqrt(1.0 - ((1.0 - (_3179 * _3179)) * (1.0 - (_3178 * _3178))));
+                        float _3187 = _3186 * _3186;
+                        float _3188 = _3187 * _3187;
+                        float _3189 = _3168 + _3134;
+                        float _3190 = _3169 + _3135;
+                        float _3191 = _3170 + _3136;
+                        float _3195 = inversesqrt(dot(vec3(_3189, _3190, _3191), vec3(_3189, _3190, _3191)));
+                        float _3199 = dot(vec3(_694, _697, _700), vec3(_3168, _3169, _3170));
+                        float _4560 = isnan(0.0) ? _3199 : (isnan(_3199) ? 0.0 : max(_3199, 0.0));
+                        float _3202 = isnan(1.0) ? _4560 : (isnan(_4560) ? 1.0 : min(_4560, 1.0));
+                        float _3203 = dot(vec3(_694, _697, _700), vec3(_3195 * _3189, _3195 * _3190, _3195 * _3191));
+                        float _4571 = isnan(0.0) ? _3203 : (isnan(_3203) ? 0.0 : max(_3203, 0.0));
+                        float _3206 = isnan(1.0) ? _4571 : (isnan(_4571) ? 1.0 : min(_4571, 1.0));
+                        float _3210 = ((_3206 * _3206) * (_3188 + (-1.0))) + 1.0;
+                        float _3211 = _3147 * _3187;
+                        float _3212 = _3211 * _3211;
+                        float _3215 = ((1.0 - _3212) * _3137) + _3212;
+                        float _4582 = isnan(0.0) ? _3215 : (isnan(_3215) ? 0.0 : max(_3215, 0.0));
+                        float _3216 = isnan(1.0) ? _4582 : (isnan(_4582) ? 1.0 : min(_4582, 1.0));
+                        float _3217 = 1.0 - _3187;
+                        float _3227 = (0.5 / (((_3216 * ((_3202 * _3217) + _3187)) + 9.9999999392252902907785028219223e-09) + (((_3216 * _3217) + _3187) * _3202))) * _3216;
+                        float _4593 = isnan(0.0) ? _3227 : (isnan(_3227) ? 0.0 : max(_3227, 0.0));
+                        float _3238 = (((_3188 * 3.1415927410125732421875) * (isnan(1.0) ? _4593 : (isnan(_4593) ? 1.0 : min(_4593, 1.0)))) / ((_3210 * _3210) * ((_3154 * 2.1991131305694580078125) + 3.141590118408203125))) * _3143;
+                        _2991 = (_3157 * _3106.x) + _3064;
+                        _2992 = (_3157 * _3106.y) + _3065;
+                        _2993 = (_3157 * _3106.z) + _3066;
+                        _2988 = (_3238 * _3123.x) + _3061;
+                        _2989 = (_3238 * _3123.y) + _3062;
+                        _2990 = (_3238 * _3123.z) + _3063;
+                        if (_3068 == 0u)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            _3061 = _2988;
+                            _3062 = _2989;
+                            _3063 = _2990;
+                            _3064 = _2991;
+                            _3065 = _2992;
+                            _3066 = _2993;
+                            _3067 = _3068;
+                        }
+                    }
+                    frontier_phi_68_pred = _2990;
+                    frontier_phi_68_pred_1 = _2993;
+                    frontier_phi_68_pred_2 = _2992;
+                    frontier_phi_68_pred_3 = _2991;
+                    frontier_phi_68_pred_4 = _2989;
+                    frontier_phi_68_pred_5 = _2988;
+                }
+                _2760 = frontier_phi_68_pred;
+                _2766 = frontier_phi_68_pred_1;
+                _2764 = frontier_phi_68_pred_2;
+                _2762 = frontier_phi_68_pred_3;
+                _2758 = frontier_phi_68_pred_4;
+                _2756 = frontier_phi_68_pred_5;
+                uint _2923 = _2922 + 1u;
+                if (_2923 < ((floatBitsToUint(cbSceneParam._m0[66u]).z >> 4u) & 15u))
+                {
+                    _2916 = _2756;
+                    _2917 = _2758;
+                    _2918 = _2760;
+                    _2919 = _2762;
+                    _2920 = _2764;
+                    _2921 = _2766;
+                    _2922 = _2923;
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            _2755 = _2756;
+            _2757 = _2758;
+            _2759 = _2760;
+            _2761 = _2762;
+            _2763 = _2764;
+            _2765 = _2766;
+        }
+        uvec4 _2769 = floatBitsToUint(cbSceneParam._m0[66u]);
+        uint _2770 = _2769.z;
+        uint _2772 = (_2770 >> 8u) & 15u;
+        float _2884;
+        float _2886;
+        float _2888;
+        float _2890;
+        float _2892;
+        float _2894;
+        if (((4294967295u << _2772) & _2629) == 0u)
+        {
+            _2884 = _2755;
+            _2886 = _2757;
+            _2888 = _2759;
+            _2890 = _2761;
+            _2892 = _2763;
+            _2894 = _2765;
+        }
+        else
+        {
+            float _2909 = inversesqrt(dot(vec3(_2583, _2584, _2585), vec3(_2583, _2584, _2585)));
+            float _2910 = _2909 * _2583;
+            float _2911 = _2909 * _2584;
+            float _2912 = _2909 * _2585;
+            float frontier_phi_60_61_ladder;
+            float frontier_phi_60_61_ladder_1;
+            float frontier_phi_60_61_ladder_2;
+            float frontier_phi_60_61_ladder_3;
+            float frontier_phi_60_61_ladder_4;
+            float frontier_phi_60_61_ladder_5;
+            if (_2772 < ((_2770 >> 12u) & 15u))
+            {
+                float _2885;
+                float _2887;
+                float _2889;
+                float _2891;
+                float _2893;
+                float _2895;
+                float _3044 = _2755;
+                float _3045 = _2757;
+                float _3046 = _2759;
+                float _3047 = _2761;
+                float _3048 = _2763;
+                float _3049 = _2765;
+                uint _3050 = _2772;
+                uint _3059;
+                bool _3060;
+                for (;;)
+                {
+                    _3059 = texelFetch(g_lightClassification, int((((_2623 << 5u) + (_2609 << 9u)) + (_3050 << 2u)) >> 2u)).x;
+                    _3060 = _3059 == 0u;
+                    float frontier_phi_79_pred;
+                    float frontier_phi_79_pred_1;
+                    float frontier_phi_79_pred_2;
+                    float frontier_phi_79_pred_3;
+                    float frontier_phi_79_pred_4;
+                    float frontier_phi_79_pred_5;
+                    if (_3060)
+                    {
+                        frontier_phi_79_pred = _3049;
+                        frontier_phi_79_pred_1 = _3048;
+                        frontier_phi_79_pred_2 = _3047;
+                        frontier_phi_79_pred_3 = _3046;
+                        frontier_phi_79_pred_4 = _3045;
+                        frontier_phi_79_pred_5 = _3044;
+                    }
+                    else
+                    {
+                        float _3252;
+                        float _3253;
+                        float _3254;
+                        float _3255;
+                        float _3256;
+                        float _3257;
+                        float _3547;
+                        float _3548;
+                        float _3549;
+                        float _3550;
+                        float _3551;
+                        float _3552;
+                        float _3265 = _3044;
+                        float _3266 = _3045;
+                        float _3267 = _3046;
+                        float _3268 = _3047;
+                        float _3269 = _3048;
+                        float _3270 = _3049;
+                        uint _3271 = _3059;
+                        uint _3272;
+                        vec4 _3297;
+                        float _3298;
+                        vec4 _3313;
+                        vec3 _3325;
+                        vec4 _3340;
+                        vec4 _3356;
+                        float _3403;
+                        bool _3404;
+                        for (;;)
+                        {
+                            uint _3282 = ((_3050 - ((floatBitsToUint(cbSceneParam._m0[66u]).z >> 8u) & 15u)) << 5u) + uint(findLSB(_3271));
+                            _3272 = (_3271 + 4294967295u) & _3271;
+                            uint _3284 = _3282 * 40u;
+                            _3297 = uintBitsToFloat(uvec4(texelFetch(g_SpotLightRenderingBuffer, int(_3284)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3284 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3284 + 2u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3284 + 3u)).x));
+                            _3298 = _3297.w;
+                            uint _3300 = (_3282 * 40u) + 4u;
+                            _3313 = uintBitsToFloat(uvec4(texelFetch(g_SpotLightRenderingBuffer, int(_3300)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3300 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3300 + 2u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3300 + 3u)).x));
+                            uint _3315 = (_3282 * 40u) + 8u;
+                            _3325 = uintBitsToFloat(uvec3(texelFetch(g_SpotLightRenderingBuffer, int(_3315)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3315 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3315 + 2u)).x));
+                            uint _3327 = (_3282 * 40u) + 16u;
+                            _3340 = uintBitsToFloat(uvec4(texelFetch(g_SpotLightRenderingBuffer, int(_3327)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3327 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3327 + 2u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3327 + 3u)).x));
+                            uint _3343 = (_3282 * 40u) + 20u;
+                            _3356 = uintBitsToFloat(uvec4(texelFetch(g_SpotLightRenderingBuffer, int(_3343)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3343 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3343 + 2u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3343 + 3u)).x));
+                            uint _3359 = (_3282 * 40u) + 24u;
+                            vec4 _3372 = uintBitsToFloat(uvec4(texelFetch(g_SpotLightRenderingBuffer, int(_3359)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3359 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3359 + 2u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3359 + 3u)).x));
+                            uint _3378 = (_3282 * 40u) + 28u;
+                            vec4 _3391 = uintBitsToFloat(uvec4(texelFetch(g_SpotLightRenderingBuffer, int(_3378)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3378 + 1u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3378 + 2u)).x, texelFetch(g_SpotLightRenderingBuffer, int(_3378 + 3u)).x));
+                            _3403 = fma(_2585, _3391.z, fma(_2584, _3391.y, _3391.x * _2583)) + _3391.w;
+                            _3404 = !((fma(_2585, _3372.z, fma(_2584, _3372.y, _3372.x * _2583)) + _3372.w) <= 0.0);
+                            float frontier_phi_85_pred;
+                            float frontier_phi_85_pred_1;
+                            float frontier_phi_85_pred_2;
+                            float frontier_phi_85_pred_3;
+                            float frontier_phi_85_pred_4;
+                            float frontier_phi_85_pred_5;
+                            if (_3404)
+                            {
+                                float _3431 = _3297.x - _2583;
+                                float _3432 = _3297.y - _2584;
+                                float _3433 = _3297.z - _2585;
+                                float _3434 = dot(vec3(_3431, _3432, _3433), vec3(_3431, _3432, _3433));
+                                float _3437 = inversesqrt(_3434);
+                                float _3438 = _3437 * _3431;
+                                float _3439 = _3437 * _3432;
+                                float _3440 = _3437 * _3433;
+                                float _3444 = 1.0 - (_3434 / (_3298 * _3298));
+                                float _4604 = isnan(0.0) ? _3444 : (isnan(_3444) ? 0.0 : max(_3444, 0.0));
+                                float _3445 = isnan(1.0) ? _4604 : (isnan(_4604) ? 1.0 : min(_4604, 1.0));
+                                float _3449 = sqrt(_3434) * _3313.w;
+                                float _3451 = 1.39999997615814208984375 / (_3449 + 1.39999997615814208984375);
+                                float _3452 = _3451 * _3451;
+                                float _3455 = ((1.0 - _3452) * dot(vec3(_3438, _3439, _3440), vec3(_694, _697, _700))) + _3452;
+                                float _3458 = _3449 * _3449;
+                                float _3462 = (fma(_2585, _3340.z, fma(_2584, _3340.y, _3340.x * _2583)) + _3340.w) / _3403;
+                                float _3463 = (fma(_2585, _3356.z, fma(_2584, _3356.y, _3356.x * _2583)) + _3356.w) / _3403;
+                                float _3467 = 1.0 - dot(vec2(_3462, _3463), vec2(_3462, _3463));
+                                float _4620 = isnan(0.0) ? _3467 : (isnan(_3467) ? 0.0 : max(_3467, 0.0));
+                                float _3468 = isnan(1.0) ? _4620 : (isnan(_4620) ? 1.0 : min(_4620, 1.0));
+                                float _3469 = _3468 * (((isnan(0.0) ? _3455 : (isnan(_3455) ? 0.0 : max(_3455, 0.0))) * _3445) / ((_3458 * 0.699999988079071044921875) + 1.0));
+                                float _3481 = exp2(log2(1.0 / ((_3458 * 3.5) + 5.0)) * 0.25);
+                                float _3482 = 1.0 - _891;
+                                float _3489 = sqrt(1.0 - ((1.0 - (_3482 * _3482)) * (1.0 - (_3481 * _3481))));
+                                float _3490 = _3489 * _3489;
+                                float _3491 = _3490 * _3490;
+                                float _3492 = _3438 - _2910;
+                                float _3493 = _3439 - _2911;
+                                float _3494 = _3440 - _2912;
+                                float _3498 = inversesqrt(dot(vec3(_3492, _3493, _3494), vec3(_3492, _3493, _3494)));
+                                float _3502 = dot(vec3(_694, _697, _700), vec3((-0.0) - _2910, (-0.0) - _2911, (-0.0) - _2912));
+                                float _4631 = isnan(0.0) ? _3502 : (isnan(_3502) ? 0.0 : max(_3502, 0.0));
+                                float _3505 = isnan(1.0) ? _4631 : (isnan(_4631) ? 1.0 : min(_4631, 1.0));
+                                float _3506 = dot(vec3(_694, _697, _700), vec3(_3498 * _3492, _3498 * _3493, _3498 * _3494));
+                                float _4642 = isnan(0.0) ? _3506 : (isnan(_3506) ? 0.0 : max(_3506, 0.0));
+                                float _3509 = isnan(1.0) ? _4642 : (isnan(_4642) ? 1.0 : min(_4642, 1.0));
+                                float _3513 = ((_3509 * _3509) * (_3491 + (-1.0))) + 1.0;
+                                float _3514 = _3451 * _3490;
+                                float _3515 = _3514 * _3514;
+                                float _3521 = ((1.0 - _3515) * dot(vec3(_694, _697, _700), vec3(_3438, _3439, _3440))) + _3515;
+                                float _4653 = isnan(0.0) ? _3521 : (isnan(_3521) ? 0.0 : max(_3521, 0.0));
+                                float _3522 = isnan(1.0) ? _4653 : (isnan(_4653) ? 1.0 : min(_4653, 1.0));
+                                float _3523 = 1.0 - _3490;
+                                float _3533 = (0.5 / (((_3522 * ((_3505 * _3523) + _3490)) + 9.9999999392252902907785028219223e-09) + (((_3522 * _3523) + _3490) * _3505))) * _3522;
+                                float _4664 = isnan(0.0) ? _3533 : (isnan(_3533) ? 0.0 : max(_3533, 0.0));
+                                float _3543 = (_3468 * _3445) * (((_3491 * 3.1415927410125732421875) * (isnan(1.0) ? _4664 : (isnan(_4664) ? 1.0 : min(_4664, 1.0)))) / ((_3513 * _3513) * ((_3458 * 2.1991131305694580078125) + 3.141590118408203125)));
+                                frontier_phi_85_pred = _3469 * _3313.z;
+                                frontier_phi_85_pred_1 = _3469 * _3313.y;
+                                frontier_phi_85_pred_2 = _3469 * _3313.x;
+                                frontier_phi_85_pred_3 = _3543 * _3325.z;
+                                frontier_phi_85_pred_4 = _3543 * _3325.y;
+                                frontier_phi_85_pred_5 = _3543 * _3325.x;
+                            }
+                            else
+                            {
+                                frontier_phi_85_pred = 0.0;
+                                frontier_phi_85_pred_1 = 0.0;
+                                frontier_phi_85_pred_2 = 0.0;
+                                frontier_phi_85_pred_3 = 0.0;
+                                frontier_phi_85_pred_4 = 0.0;
+                                frontier_phi_85_pred_5 = 0.0;
+                            }
+                            _3552 = frontier_phi_85_pred;
+                            _3551 = frontier_phi_85_pred_1;
+                            _3550 = frontier_phi_85_pred_2;
+                            _3549 = frontier_phi_85_pred_3;
+                            _3548 = frontier_phi_85_pred_4;
+                            _3547 = frontier_phi_85_pred_5;
+                            _3255 = _3550 + _3268;
+                            _3256 = _3551 + _3269;
+                            _3257 = _3552 + _3270;
+                            _3252 = _3547 + _3265;
+                            _3253 = _3548 + _3266;
+                            _3254 = _3549 + _3267;
+                            if (_3272 == 0u)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                _3265 = _3252;
+                                _3266 = _3253;
+                                _3267 = _3254;
+                                _3268 = _3255;
+                                _3269 = _3256;
+                                _3270 = _3257;
+                                _3271 = _3272;
+                                continue;
+                            }
+                        }
+                        frontier_phi_79_pred = _3257;
+                        frontier_phi_79_pred_1 = _3256;
+                        frontier_phi_79_pred_2 = _3255;
+                        frontier_phi_79_pred_3 = _3254;
+                        frontier_phi_79_pred_4 = _3253;
+                        frontier_phi_79_pred_5 = _3252;
+                    }
+                    _2895 = frontier_phi_79_pred;
+                    _2893 = frontier_phi_79_pred_1;
+                    _2891 = frontier_phi_79_pred_2;
+                    _2889 = frontier_phi_79_pred_3;
+                    _2887 = frontier_phi_79_pred_4;
+                    _2885 = frontier_phi_79_pred_5;
+                    uint _3051 = _3050 + 1u;
+                    if (_3051 < ((floatBitsToUint(cbSceneParam._m0[66u]).z >> 12u) & 15u))
+                    {
+                        _3044 = _2885;
+                        _3045 = _2887;
+                        _3046 = _2889;
+                        _3047 = _2891;
+                        _3048 = _2893;
+                        _3049 = _2895;
+                        _3050 = _3051;
+                        continue;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                frontier_phi_60_61_ladder = _2891;
+                frontier_phi_60_61_ladder_1 = _2895;
+                frontier_phi_60_61_ladder_2 = _2893;
+                frontier_phi_60_61_ladder_3 = _2889;
+                frontier_phi_60_61_ladder_4 = _2887;
+                frontier_phi_60_61_ladder_5 = _2885;
+            }
+            else
+            {
+                frontier_phi_60_61_ladder = _2761;
+                frontier_phi_60_61_ladder_1 = _2765;
+                frontier_phi_60_61_ladder_2 = _2763;
+                frontier_phi_60_61_ladder_3 = _2759;
+                frontier_phi_60_61_ladder_4 = _2757;
+                frontier_phi_60_61_ladder_5 = _2755;
+            }
+            _2884 = frontier_phi_60_61_ladder_5;
+            _2886 = frontier_phi_60_61_ladder_4;
+            _2888 = frontier_phi_60_61_ladder_3;
+            _2890 = frontier_phi_60_61_ladder;
+            _2892 = frontier_phi_60_61_ladder_2;
+            _2894 = frontier_phi_60_61_ladder_1;
+        }
+        float _2899 = isnan(1.0) ? _881 : (isnan(_881) ? 1.0 : min(_881, 1.0));
+        _2641 = (_2899 * _2890) + _2078;
+        _2643 = (_2899 * _2892) + _2080;
+        _2645 = (_2899 * _2894) + _2082;
+        _2647 = ((_2884 * _867) * _2899) + _2423;
+        _2649 = ((_2886 * _868) * _2899) + _2425;
+        _2651 = ((_2888 * _869) * _2899) + _2427;
+    }
+    else
+    {
+        _2641 = _2078;
+        _2643 = _2080;
+        _2645 = _2082;
+        _2647 = _2423;
+        _2649 = _2425;
+        _2651 = _2427;
+    }
+    uint _2657 = _774 + uint(cbMatDynParam._m0[0u].w);
+    float _2663 = cbInstanceData._m0[_2657].x * ((((cbMatDynParam._m0[8u].x - cbMatDynParam._m0[7u].x) * _555) + cbMatDynParam._m0[7u].x) + (((_596 - (_596 * _520)) + (cbMatDynParam._m0[11u].x * _627)) * cbMatDynParam._m0[9u].x));
+    float _2664 = cbInstanceData._m0[_2657].y * ((((cbMatDynParam._m0[8u].y - cbMatDynParam._m0[7u].y) * _555) + cbMatDynParam._m0[7u].y) + (((_598 - (_598 * _520)) + (cbMatDynParam._m0[11u].y * _627)) * cbMatDynParam._m0[9u].y));
+    float _2665 = cbInstanceData._m0[_2657].z * ((((cbMatDynParam._m0[8u].z - cbMatDynParam._m0[7u].z) * _555) + cbMatDynParam._m0[7u].z) + (((_600 - (_600 * _520)) + (cbMatDynParam._m0[11u].z * _627)) * cbMatDynParam._m0[9u].z));
+    float _4680 = isnan(0.0) ? _858 : (isnan(_858) ? 0.0 : max(_858, 0.0));
+    float _4691 = isnan(0.0) ? _859 : (isnan(_859) ? 0.0 : max(_859, 0.0));
+    float _4702 = isnan(0.0) ? _860 : (isnan(_860) ? 0.0 : max(_860, 0.0));
+    float _4713 = isnan(0.0) ? _515 : (isnan(_515) ? 0.0 : max(_515, 0.0));
+    float _2683 = (((isnan(1.0) ? _4680 : (isnan(_4680) ? 1.0 : min(_4680, 1.0))) * (_2641 + ((isnan(0.0) ? _1637 : (isnan(_1637) ? 0.0 : max(_1637, 0.0))) * _881))) + ((_2647 + ((isnan(0.0) ? _1930 : (isnan(_1930) ? 0.0 : max(_1930, 0.0))) * _1713)) * cbPerFrame._m0[3u].x)) + _2663;
+    float _2685 = (_2664 + ((_2649 + ((isnan(0.0) ? _1933 : (isnan(_1933) ? 0.0 : max(_1933, 0.0))) * _1713)) * cbPerFrame._m0[3u].x)) + ((isnan(1.0) ? _4691 : (isnan(_4691) ? 1.0 : min(_4691, 1.0))) * (_2643 + ((isnan(0.0) ? _1640 : (isnan(_1640) ? 0.0 : max(_1640, 0.0))) * _881)));
+    float _2687 = (_2665 + ((_2651 + ((isnan(0.0) ? _1936 : (isnan(_1936) ? 0.0 : max(_1936, 0.0))) * _1713)) * cbPerFrame._m0[3u].x)) + ((isnan(1.0) ? _4702 : (isnan(_4702) ? 1.0 : min(_4702, 1.0))) * (_2645 + ((isnan(0.0) ? _1643 : (isnan(_1643) ? 0.0 : max(_1643, 0.0))) * _881)));
+    float _2688 = isnan(0.0) ? _2683 : (isnan(_2683) ? 0.0 : max(_2683, 0.0));
+    float _2689 = isnan(0.0) ? _2685 : (isnan(_2685) ? 0.0 : max(_2685, 0.0));
+    float _2690 = isnan(0.0) ? _2687 : (isnan(_2687) ? 0.0 : max(_2687, 0.0));
+    float _2695 = cbMatDynParam._m0[12u].y - (cbMatDynParam._m0[12u].y * ((((isnan(1.0) ? _3805 : (isnan(_3805) ? 1.0 : min(_3805, 1.0))) - _582) * _555) + _582));
+    float _2700 = cbInstanceData._m0[_773 + 6u].w * (isnan(1.0) ? _4713 : (isnan(_4713) ? 1.0 : min(_4713, 1.0)));
+    float _2705 = _671 / cbSceneParam._m0[86u].x;
+    float _2706 = _672 / cbSceneParam._m0[86u].y;
+    vec4 _2720 = texture(sampler3D(g_VolumeFog0, SS_ClampLinear), vec3(_2705, _2706, (log2((isnan(cbSceneParam._m0[77u].w) ? _653 : (isnan(_653) ? cbSceneParam._m0[77u].w : min(_653, cbSceneParam._m0[77u].w))) + cbSceneParam._m0[77u].x) * cbSceneParam._m0[77u].y) + cbSceneParam._m0[77u].z));
+    float _2722 = _2720.x;
+    float _2723 = _2720.y;
+    float _2724 = _2720.z;
+    float _2725 = _2720.w;
+    float _2817;
+    float _2819;
+    float _2821;
+    float _2823;
+    if (_653 > cbSceneParam._m0[78u].w)
+    {
+        float _2780 = isnan(_653) ? cbSceneParam._m0[80u].w : (isnan(cbSceneParam._m0[80u].w) ? _653 : min(cbSceneParam._m0[80u].w, _653));
+        float _2781 = _2780 / _653;
+        float _2792 = _2781 * _287;
+        float _2793 = _288 * _2781;
+        float _2794 = (-0.0) - _2793;
+        float _2795 = _2781 * _289;
+        float _2797 = (cbSceneParam._m0[77u].w * _2794) / _2780;
+        float _2798 = _2797 + cbSceneParam._m0[79u].w;
+        float _2799 = cbSceneParam._m0[79u].w - _2793;
+        float _2805 = sqrt(((_2792 * _2792) + (_2793 * _2793)) + (_2795 * _2795));
+        float _2808 = (1.0 - (cbSceneParam._m0[77u].w / _2780)) * _2805;
+        float _2813 = cbSceneParam._m0[80u].x * (-1.44269502162933349609375);
+        float _2815 = cbSceneParam._m0[80u].x * 1.44269502162933349609375;
+        float _3001;
+        if (abs((_2794 - _2797) * cbSceneParam._m0[80u].x) < 9.9999997473787516355514526367188e-05)
+        {
+            _3001 = ((((_2798 > 0.0) ? exp2(_2813 * _2798) : (2.0 - exp2(_2815 * _2798))) * cbSceneParam._m0[80u].y) + cbSceneParam._m0[80u].z) * _2808;
+        }
+        else
+        {
+            float _2945 = 1.0 / cbSceneParam._m0[80u].x;
+            float _2946 = isnan(_2799) ? _2798 : (isnan(_2798) ? _2799 : max(_2798, _2799));
+            float _2947 = isnan(_2799) ? _2798 : (isnan(_2798) ? _2799 : min(_2798, _2799));
+            float _2956 = isnan(0.0) ? _2946 : (isnan(_2946) ? 0.0 : min(_2946, 0.0));
+            float _2957 = isnan(0.0) ? _2947 : (isnan(_2947) ? 0.0 : min(_2947, 0.0));
+            _3001 = ((abs(_2805 / _2794) * cbSceneParam._m0[80u].y) * ((((_2956 - _2957) * 2.0) - ((exp2(_2813 * (isnan(0.0) ? _2946 : (isnan(_2946) ? 0.0 : max(_2946, 0.0)))) - exp2(_2813 * (isnan(0.0) ? _2947 : (isnan(_2947) ? 0.0 : max(_2947, 0.0))))) * _2945)) - ((exp2(_2815 * _2956) - exp2(_2815 * _2957)) * _2945))) + (_2808 * cbSceneParam._m0[80u].z);
+        }
+        vec4 _3003 = textureLod(sampler3D(g_VolumeFog0, SS_ClampLinear), vec3(_2705, _2706, 1.0), 0.0);
+        float _3012 = exp2((_3001 * (-1.44269502162933349609375)) * (1.0 - _3003.w));
+        float _3013 = log2(_3012);
+        float _3029 = log2(_2725);
+        _2817 = (exp2(_3029 * cbSceneParam._m0[78u].x) * (((1.0 - exp2(_3013 * cbSceneParam._m0[78u].x)) * _3003.x) / cbSceneParam._m0[78u].x)) + _2722;
+        _2819 = (exp2(_3029 * cbSceneParam._m0[78u].y) * (((1.0 - exp2(_3013 * cbSceneParam._m0[78u].y)) * _3003.y) / cbSceneParam._m0[78u].y)) + _2723;
+        _2821 = (exp2(_3029 * cbSceneParam._m0[78u].z) * (((1.0 - exp2(_3013 * cbSceneParam._m0[78u].z)) * _3003.z) / cbSceneParam._m0[78u].z)) + _2724;
+        _2823 = _3012 * _2725;
+    }
+    else
+    {
+        _2817 = _2722;
+        _2819 = _2723;
+        _2821 = _2724;
+        _2823 = _2725;
+    }
+    bool _3039;
+    vec4 _2833;
+    vec4 _2855;
+    float _2857;
+    float _2861;
+    float _2862;
+    float _2863;
+    float _2866;
+    float _2869;
+    float _2872;
+    float _2873;
+    bool _2883;
+    for (;;)
+    {
+        _2833 = cbMatDynParam._m0[0u];
+        float _2835 = roundEven(_2833.y);
+        bool _2836 = _2835 == 3.0;
+        float _2837 = log2(_2823);
+        float _2841 = exp2(_2837 * cbSceneParam._m0[78u].x);
+        float _2842 = exp2(_2837 * cbSceneParam._m0[78u].y);
+        float _2843 = exp2(_2837 * cbSceneParam._m0[78u].z);
+        float _2844 = _2841 * _2688;
+        float _2845 = _2842 * _2689;
+        float _2846 = _2843 * _2690;
+        float _2853 = _660 + (-0.5);
+        _2855 = cbMtdParam._m0[1u];
+        _2857 = _2855.y * _2853;
+        float _2860 = (_2835 != 2.0) ? cbSceneParam._m0[72u].z : 1.0;
+        _2861 = _2860 * (_2836 ? _2844 : (_2844 + (cbSceneParam._m0[72u].w * _2817)));
+        _2862 = _2860 * (_2836 ? _2845 : (_2845 + (cbSceneParam._m0[72u].w * _2819)));
+        _2863 = _2860 * (_2836 ? _2846 : (_2846 + (cbSceneParam._m0[72u].w * _2821)));
+        _2866 = ((_2695 * _2663) * _2841) * _2860;
+        _2869 = ((_2695 * _2664) * _2842) * _2860;
+        _2872 = ((_2695 * _2665) * _2843) * _2860;
+        _2873 = _2853 * 0.999000012874603271484375;
+        _2883 = (cbModelParam._m0[2u].x > 0.0) && (floatBitsToUint(cbMatDynParam._m0[0u]).x != 0u);
+        if (_2883)
+        {
+            if ((cbInstanceData._m0[_773 + 7u].x + _2873) < 0.5)
+            {
+                _3039 = true;
+                break;
+            }
+        }
+        uint _2980 = _774 + uint(_2833.w);
+        if ((cbInstanceData._m0[_2980].w < 1.0) && ((cbInstanceData._m0[_2980].w + _2873) < 0.5))
+        {
+            _3039 = true;
+            break;
+        }
+        if ((_2857 + _400) < _2855.x)
+        {
+            _3039 = true;
+            break;
+        }
+        _3039 = false;
+        break;
+    }
+    float _3243;
+    if (_3039)
+    {
+        discard_state = true;
+        _3243 = 0.0;
+    }
+    else
+    {
+        _3243 = _2700;
+    }
+    SV_Target.x = _2861;
+    SV_Target.y = _2862;
+    SV_Target.z = _2863;
+    SV_Target.w = _3243;
+    SV_Target_1.x = _2866;
+    SV_Target_1.y = _2869;
+    SV_Target_1.z = _2872;
+    SV_Target_1.w = _2700;
+    discard_exit();
+}
+
+
